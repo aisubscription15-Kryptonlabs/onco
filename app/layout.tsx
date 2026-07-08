@@ -1,21 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Inter } from "next/font/google";
 import "./globals.css";
 import { ToastViewport } from "@/components/onco/ui/Toast";
 import { ToastProvider } from "@/components/ui/Toast";
 import { ThemeScript } from "@/components/theme/ThemeScript";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  display: "swap",
-});
-
-const bricolage = Bricolage_Grotesque({
-  subsets: ["latin"],
-  variable: "--font-display",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "OncoMotionRx",
@@ -46,7 +33,7 @@ export default function RootLayout({
       <head>
         <ThemeScript />
       </head>
-      <body className={`${inter.variable} ${bricolage.variable} font-sans`}>
+      <body className="font-sans">
         <ToastProvider>
           {children}
           <ToastViewport />
