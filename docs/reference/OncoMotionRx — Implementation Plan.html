@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OncoMotionRx — Implementation Plan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream: #F9F7F1;
+            --cream-dark: #F0EBE1;
+            --ink: #1B211E;
+            --ink-light: #3E4541;
+            --sage: #2A5747;
+            --sage-dark: #1E3D32;
+            --sage-light: #5A8A74;
+            --sage-pale: #E1EBE3;
+            --terracotta: #C0653A;
+            --terracotta-pale: #F3E6DB;
+            --sand: #E5C6AC;
+            --muted: #7B827C;
+            --border: #D9D3C6;
+            --white: #FFFFFF;
+            --shadow-sm: 0 1px 3px rgba(27, 33, 30, 0.05);
+            --shadow: 0 4px 16px rgba(27, 33, 30, 0.07);
+            --shadow-md: 0 8px 28px rgba(27, 33, 30, 0.10);
+            --shadow-lg: 0 16px 48px rgba(27, 33, 30, 0.14);
+            --radius-sm: 8px;
+            --radius: 12px;
+            --radius-lg: 16px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; scroll-padding-top: 100px; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #E8E3D8;
+            color: var(--ink);
+            line-height: 1.7;
+            font-size: 15.5px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .page { display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #16201C 0%, #1B2823 100%);
+            color: var(--cream);
+            position: fixed;
+            top: 0; left: 0;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+            padding: 2rem 0;
+            border-right: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .sidebar-header {
+            padding: 0 1.5rem 1.5rem;
+            border-bottom: 1px solid rgba(247, 244, 237, 0.10);
+            margin-bottom: 1.25rem;
+        }
+
+        .sidebar-header h1 {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--cream);
+            letter-spacing: -0.02em;
+        }
+
+        .sidebar-header .tagline {
+            font-size: 0.7rem;
+            color: var(--sage-light);
+            margin-top: 0.3rem;
+            text-transform: uppercase;
+            letter-spacing: 0.10em;
+            font-weight: 600;
+        }
+
+        .nav-list { list-style: none; padding: 0; }
+
+        .nav-list li { margin: 0; }
+
+        .nav-list a {
+            display: block;
+            padding: 0.6rem 1.5rem;
+            color: rgba(247, 244, 237, 0.68);
+            text-decoration: none;
+            font-size: 0.87rem;
+            border-left: 3px solid transparent;
+            transition: all 0.18s ease;
+        }
+
+        .nav-list a:hover {
+            background: rgba(247, 244, 237, 0.05);
+            color: var(--cream);
+            border-left-color: var(--sage-light);
+            padding-left: 1.65rem;
+        }
+
+        .nav-list a.active {
+            background: rgba(247, 244, 237, 0.09);
+            color: var(--cream);
+            border-left-color: var(--terracotta);
+            font-weight: 600;
+        }
+
+        .nav-section {
+            font-weight: 700;
+            font-size: 0.66rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--sage-light);
+            padding: 1.25rem 1.5rem 0.4rem;
+        }
+
+        .menu-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 200;
+            background: var(--sage);
+            color: var(--cream);
+            border: none;
+            padding: 0.65rem 1.1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Main */
+        .main {
+            margin-left: 280px;
+            flex: 1;
+            max-width: 1000px;
+            padding: 0;
+            background: var(--cream);
+            min-height: 100vh;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .hero {
+            background: linear-gradient(135deg, var(--sage-dark) 0%, var(--sage) 55%, #3A6B58 100%);
+            color: #FFFFFF;
+            padding: 5rem 3rem;
+            margin-bottom: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 85% 20%, rgba(192, 101, 58, 0.18) 0%, transparent 35%),
+                radial-gradient(circle at 15% 80%, rgba(90, 138, 116, 0.20) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+        .hero > * { position: relative; z-index: 1; }
+
+        .hero .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero .brand-mark {
+            width: 42px; height: 42px;
+            border-radius: 14px;
+            background: var(--terracotta);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+        }
+
+        .hero .brand-mark svg { width: 24px; height: 24px; fill: none; stroke: #FFFFFF; stroke-width: 2.2; }
+
+        .hero .brand-name {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-weight: 700;
+            font-size: 1.4rem;
+            letter-spacing: -0.01em;
+            color: #FFFFFF;
+        }
+
+        .hero h1 {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 3.1rem;
+            font-weight: 800;
+            line-height: 1.05;
+            letter-spacing: -0.035em;
+            margin-bottom: 0.9rem;
+            color: #FFFFFF;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.12);
+            max-width: 720px;
+        }
+
+        .hero p {
+            font-size: 1.18rem;
+            color: rgba(255, 255, 255, 0.92);
+            max-width: 660px;
+            line-height: 1.55;
+            font-weight: 400;
+        }
+
+        .hero .meta {
+            margin-top: 2rem;
+            display: flex;
+            gap: 0.85rem;
+            flex-wrap: wrap;
+        }
+
+        .meta-badge {
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: #FFFFFF;
+            padding: 0.4rem 0.95rem;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            backdrop-filter: blur(4px);
+        }
+
+        section { padding: 0 3rem 3rem; }
+
+        h2 {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 1.85rem;
+            color: var(--sage-dark);
+            margin: 3rem 0 1.2rem;
+            padding-bottom: 0.65rem;
+            border-bottom: 2px solid var(--border);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        h3 {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 1.3rem;
+            color: var(--ink);
+            margin: 2rem 0 0.9rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+
+        h4 {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 1.08rem;
+            color: var(--sage-dark);
+            margin: 1.4rem 0 0.55rem;
+            font-weight: 700;
+        }
+
+        p { margin-bottom: 1.1rem; color: var(--ink-light); }
+
+        a { color: var(--sage); text-decoration: none; font-weight: 600; transition: color 0.15s; }
+
+        a:hover { color: var(--terracotta); }
+
+        /* Summary box */
+        .summary-box {
+            background: linear-gradient(135deg, var(--sage-pale) 0%, #EDF3EE 100%);
+            border-left: 4px solid var(--sage);
+            padding: 1.65rem;
+            border-radius: 0 var(--radius) var(--radius) 0;
+            margin: 1.75rem 0;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .summary-box strong { color: var(--sage-dark); }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 1.25rem 0 1.75rem;
+            font-size: 0.92rem;
+            box-shadow: var(--shadow);
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--white);
+            border: 1px solid var(--border);
+        }
+
+        thead { background: var(--sage-dark); color: var(--cream); }
+
+        th {
+            padding: 1rem 1.1rem;
+            text-align: left;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+        }
+
+        td {
+            padding: 0.95rem 1.1rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+            color: var(--ink-light);
+        }
+
+        tbody tr:nth-child(even) { background: rgba(225, 235, 227, 0.30); }
+
+        tbody tr:hover { background: rgba(42, 87, 71, 0.04); }
+
+        tbody tr:last-child td { border-bottom: none; }
+
+        /* Cards */
+        .card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.6rem;
+            margin: 1rem 0;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+
+        .card-highlight {
+            border-color: var(--sage-light);
+            background: linear-gradient(135deg, var(--white) 0%, var(--sage-pale) 100%);
+        }
+
+        .card-terracotta {
+            border-color: #DDA785;
+            background: linear-gradient(135deg, var(--terracotta-pale) 0%, #FAF4EF 100%);
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
+
+        /* Feature list */
+        ul, ol { margin: 0.85rem 0 1.1rem 1.6rem; }
+        li { margin-bottom: 0.45rem; color: var(--ink-light); }
+
+        /* Architecture */
+        .arch-diagram {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            margin: 1.75rem 0;
+            box-shadow: var(--shadow);
+        }
+
+        .layer { margin-bottom: 1.4rem; }
+        .layer:last-child { margin-bottom: 0; }
+
+        .layer-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--muted);
+            margin-bottom: 0.75rem;
+            font-weight: 700;
+        }
+
+        .layer-row { display: flex; gap: 0.85rem; flex-wrap: wrap; }
+
+        .box {
+            padding: 0.85rem 1.05rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.87rem;
+            font-weight: 600;
+            border: 1.5px solid;
+            min-width: 120px;
+            text-align: center;
+            line-height: 1.45;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .box small { display: block; font-size: 0.74rem; font-weight: 500; opacity: 0.82; margin-top: 3px; }
+
+        .box-mobile { background: #E8F0EB; border-color: var(--sage-light); color: var(--sage-dark); }
+        .box-web { background: #EBEEF5; border-color: #5C6BC0; color: #303F9F; }
+        .box-api { background: #E8F4FD; border-color: #64B5F6; color: #1565C0; }
+        .box-db { background: #FFF5E6; border-color: #FFB74D; color: #E65100; }
+        .box-ai { background: #F5EAF7; border-color: #BA68C8; color: #7B1FA2; }
+        .box-ext { background: #ECEFF1; border-color: #78909C; color: #455A64; }
+        .box-infra { background: #E8F5E9; border-color: #81C784; color: #2E7D32; }
+
+        .arrow-down { text-align: center; color: var(--muted); font-size: 1.25rem; margin: 0.2rem 0; opacity: 0.6; }
+
+        /* Cost cards */
+        .cost-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; margin: 1.75rem 0; }
+
+        .cost-card {
+            background: var(--white);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .cost-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+
+        .cost-card.popular { border-color: var(--sage-light); box-shadow: 0 0 0 1px var(--sage-light), var(--shadow); }
+
+        .cost-card h4 {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            margin-top: 0;
+            font-size: 1.05rem;
+            color: var(--ink);
+        }
+
+        .cost-card .price {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--sage-dark);
+            margin: 0.3rem 0 0.15rem;
+            letter-spacing: -0.02em;
+        }
+
+        .cost-card .price small {
+            font-size: 0.85rem;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .cost-card .per-user {
+            font-size: 0.84rem;
+            color: var(--muted);
+            margin-bottom: 1.1rem;
+            font-weight: 600;
+        }
+
+        .cost-card table { margin: 0; box-shadow: none; font-size: 0.83rem; border: none; border-radius: 0; }
+        .cost-card td { padding: 0.4rem 0; border-bottom: 1px solid #ECE7DB; }
+        .cost-card td:last-child { text-align: right; font-weight: 600; color: var(--ink); }
+        .cost-card tr:last-child td { border-bottom: none; }
+        .cost-card .total-row td { padding-top: 0.7rem; border-top: 2px solid var(--border); border-bottom: none; color: var(--sage-dark); font-weight: 700; }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 0.22rem 0.65rem;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-right: 0.45rem;
+        }
+
+        .badge-sage { background: var(--sage-pale); color: var(--sage-dark); }
+        .badge-terra { background: var(--terracotta-pale); color: var(--terracotta); }
+        .badge-sand { background: var(--sand); color: #6B4226; }
+
+        /* Notes */
+        .note {
+            background: linear-gradient(135deg, var(--terracotta-pale) 0%, #FAF4EF 100%);
+            border-left: 4px solid var(--terracotta);
+            padding: 1.15rem 1.4rem;
+            border-radius: 0 var(--radius) var(--radius) 0;
+            margin: 1.25rem 0;
+            font-size: 0.92rem;
+            color: var(--ink-light);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .note strong { color: var(--terracotta); }
+
+        /* Phase timeline */
+        .phase {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.4rem;
+            margin-bottom: 0.9rem;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.15s ease;
+        }
+
+        .phase:hover { box-shadow: var(--shadow); }
+
+        .phase h4 { margin-top: 0; }
+
+        /* Risk table */
+        .risk-high { color: #B94A48; font-weight: 700; }
+        .risk-med { color: #C2781E; font-weight: 700; }
+        .risk-low { color: var(--sage-dark); font-weight: 700; }
+
+        /* Footer */
+        .footer {
+            margin-top: 3.5rem;
+            padding: 2.5rem 3rem;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 0.86rem;
+            text-align: center;
+            background: var(--cream-dark);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); transition: transform 0.2s; }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; max-width: 100%; }
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+            .cost-grid { grid-template-columns: 1fr; }
+            .hero { padding: 3.5rem 1.75rem; }
+            .hero h1 { font-size: 2.1rem; }
+            section { padding: 0 1.5rem 2rem; }
+            .menu-toggle { display: block; }
+        }
+
+        @media print {
+            .sidebar, .menu-toggle { display: none; }
+            .main { margin-left: 0; max-width: 100%; box-shadow: none; }
+            .hero { background: var(--sage-dark) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .hero h1, .hero p, .hero .brand-name { color: #FFFFFF !important; }
+        }
+    </style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰ Menu</button>
+
+<div class="page">
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h1>OncoMotionRx</h1>
+            <div class="tagline">Implementation Plan v1.0</div>
+        </div>
+        <ul class="nav-list">
+            <li class="nav-section">Overview</li>
+            <li><a href="#executive-summary">Executive Summary</a></li>
+            <li><a href="#design-foundation">Design Foundation</a></li>
+            <li><a href="#user-roles">User Roles &amp; Platforms</a></li>
+
+            <li class="nav-section">Product</li>
+            <li><a href="#features">Feature List</a></li>
+            <li><a href="#patient-app">Patient Mobile App</a></li>
+            <li><a href="#doctor-web">Doctor Web App</a></li>
+            <li><a href="#admin-web">Admin Web App</a></li>
+
+            <li class="nav-section">Technology</li>
+            <li><a href="#tech-stack">Tech Stack</a></li>
+            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#data-model">Data Model</a></li>
+
+            <li class="nav-section">Infrastructure</li>
+            <li><a href="#infra-options">Infra Options</a></li>
+            <li><a href="#cost-estimates">Cost Estimates</a></li>
+            <li><a href="#scaling">Scaling Strategy</a></li>
+
+            <li class="nav-section">Delivery</li>
+            <li><a href="#security">Security &amp; Compliance</a></li>
+            <li><a href="#risks">Risks &amp; Mitigation</a></li>
+        </ul>
+    </nav>
+
+    <main class="main">
+        <div class="hero">
+            <div class="brand">
+                <div class="brand-mark">
+                    <svg viewBox="0 0 24 24"><path d="M13 4a1 1 0 1 0-2 0v1.5l-1.5.8a6 6 0 0 0-3 5.2v3a6 6 0 0 0 3 5.2l3 1.7 3-1.7a6 6 0 0 0 3-5.2v-3a6 6 0 0 0-3-5.2L13 5.5V4Z"/><path d="M9.5 13.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5Z"/></svg>
+                </div>
+                <span class="brand-name">OncoMotionRx</span>
+            </div>
+            <h1>Implementation Plan</h1>
+            <p>Build the production-ready installable application based on the final design screens. Cross-platform mobile for patients, web for clinicians, and web for admins — with a robust, scalable backend.</p>
+            <div class="meta">
+                <span class="meta-badge">Version 1.0</span>
+                <span class="meta-badge">June 2026</span>
+                <span class="meta-badge">Target: iOS · Android · Web</span>
+            </div>
+        </div>
+
+        <section id="executive-summary">
+            <h2>1. Executive Summary</h2>
+            <div class="summary-box">
+                <p><strong>OncoMotionRx</strong> is a prescribable exercise-therapy platform for oncology patients. This plan defines how to build the production application from the approved high-fidelity designs into a working, installable product.</p>
+            </div>
+
+            <h3>What We Are Building</h3>
+            <ul>
+                <li><strong>Patient Mobile App (iOS &amp; Android):</strong> Installable native-feel application for daily use, onboarding, prescriptions, sessions, progress tracking, and Artie chat.</li>
+                <li><strong>Doctor Web Application:</strong> Browser-based dashboard for oncologists and care teams to prescribe, monitor, review summaries, and receive alerts.</li>
+                <li><strong>Admin Web Application:</strong> Browser-based panel for program administrators to manage users, content, configuration, and operational oversight.</li>
+                <li><strong>Shared Backend:</strong> Robust API, database, real-time notifications, AI orchestration, wearable integrations, and storage — HIPAA-aligned from day one.</li>
+            </ul>
+
+            <h3>Key Product Decisions</h3>
+            <div class="grid-2">
+                <div class="card">
+                    <h4><span class="badge badge-sage">Decision</span> Cross-platform mobile</h4>
+                    <p>Use <strong>React Native with Expo</strong> so a single codebase ships to both iOS and Android while retaining native HealthKit / Google Fit integrations.</p>
+                </div>
+                <div class="card">
+                    <h4><span class="badge badge-sage">Decision</span> Web for doctors &amp; admins</h4>
+                    <p>Use <strong>React + TypeScript + Vite</strong> for both clinician and admin web apps, sharing a component library and API client.</p>
+                </div>
+                <div class="card">
+                    <h4><span class="badge badge-sage">Decision</span> Supabase-first backend</h4>
+                    <p>Start with <strong>Supabase</strong> (PostgreSQL, Auth, Realtime, Edge Functions, Storage) for speed. Provide an AWS migration path for 10,000+ users.</p>
+                </div>
+                <div class="card">
+                    <h4><span class="badge badge-sage">Decision</span> AI companion Artie</h4>
+                    <p>Powered by <strong>Anthropic Claude</strong> (Sonnet for complex reasoning, Haiku for fast responses) with a prompt registry and escalation logic.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="design-foundation">
+            <h2>2. Design Foundation</h2>
+            <p>The implementation is based on the approved design reference: <strong>oncomotionrx-designs.html</strong> (17 screens, Bricolage Grotesque + Inter, cream/sage/terracotta palette).</p>
+
+            <h3>Brand &amp; Visual Language</h3>
+            <table>
+                <thead><tr><th>Element</th><th>Value</th><th>Usage</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Primary color</strong></td><td>Forest sage #2D5A4A</td><td>Headers, primary buttons, active states, prescription cards</td></tr>
+                    <tr><td><strong>Base color</strong></td><td>Cream #F7F4ED</td><td>App background, surfaces, calming base</td></tr>
+                    <tr><td><strong>Accent color</strong></td><td>Terracotta #C66B3D</td><td>Artie avatar, progress bars, calls-to-action, alerts</td></tr>
+                    <tr><td><strong>Display font</strong></td><td>Bricolage Grotesque</td><td>Headlines, screen titles, numbers</td></tr>
+                    <tr><td><strong>Body font</strong></td><td>Inter</td><td>Paragraphs, labels, chat, tables</td></tr>
+                    <tr><td><strong>Icon system</strong></td><td>Tabler Icons</td><td>Navigation, feature iconography</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Screen Inventory from Design</h3>
+            <table>
+                <thead><tr><th>Group</th><th>Screens</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Onboarding</strong></td><td>Welcome, Treatment context, Baseline/Artie intro, Safety screen, Preferences, Barriers, Environment scan, Social support, Goal &amp; tracking, Plan reveal</td></tr>
+                    <tr><td><strong>Core tabs</strong></td><td>Today, Prescription, Sessions, Progress, Ask Artie</td></tr>
+                    <tr><td><strong>Key features</strong></td><td>Artie session flow, Doctor summary, Guided walk (live)</td></tr>
+                </tbody>
+            </table>
+
+            <div class="note">
+                <strong>Note:</strong> The wireframe demo (Netlify) validated user flows, star logic, and Artie interactions. The final app will faithfully implement the new visual design while preserving validated behaviors.
+            </div>
+        </section>
+
+        <section id="user-roles">
+            <h2>3. User Roles &amp; Platforms</h2>
+            <table>
+                <thead><tr><th>Role</th><th>Platform</th><th>Primary Device</th><th>Core Purpose</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Patient</strong></td><td>Native mobile app</td><td>iPhone / Android phone</td><td>Daily prescription adherence, sessions with Artie, progress tracking, symptom reporting, doctor summary sharing</td></tr>
+                    <tr><td><strong>Doctor / Care Team</strong></td><td>Web application</td><td>Desktop / tablet browser</td><td>Prescribe exercise therapy, review patient progress, receive alerts, generate visit summaries</td></tr>
+                    <tr><td><strong>Admin</strong></td><td>Web application</td><td>Desktop browser</td><td>User management, content &amp; curriculum configuration, program settings, analytics, support tools</td></tr>
+                    <tr><td><strong>Artie (AI)</strong></td><td>Backend service</td><td>n/a</td><td>Personalized guidance, session facilitation, safety triage, symptom-aware coaching</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Why Mobile-Only for Patients?</h3>
+            <ul>
+                <li>Wearable integrations (Apple HealthKit, Google Fit) are native-first on mobile.</li>
+                <li>Patients need quick friction-free daily interactions; a pocket app beats a browser bookmark.</li>
+                <li>Push notifications drive adherence for daily prescriptions and session reminders.</li>
+                <li>Voice journaling and live guided walks work best on a device patients carry.</li>
+            </ul>
+
+            <h3>Why Web for Doctors &amp; Admins?</h3>
+            <ul>
+                <li>Clinical workflows require larger screens, multi-patient views, charts, and printable summaries.</li>
+                <li>Admins manage configuration and review analytics — desktop web is the standard tool.</li>
+                <li>No need to install or maintain separate clinician mobile apps.</li>
+            </ul>
+        </section>
+
+        <section id="features">
+            <h2>4. Feature List</h2>
+
+            <h3 id="patient-app">4.1 Patient Mobile App Features</h3>
+            <table>
+                <thead><tr><th>Module</th><th>Features</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Auth &amp; Onboarding</strong></td><td>Self-start or care-team code, 6-step onboarding, treatment context, safety screen, preferences, barriers, environment scan, social support invite, goal selection, wearable connect, plan reveal</td></tr>
+                    <tr><td><strong>Today Tab</strong></td><td>Daily prescription card, "I did it" quick log, "I'm too tired" / "I have a symptom" quick actions, weekly progress (minutes + MET-hours), next Artie session preview</td></tr>
+                    <tr><td><strong>Prescription Tab</strong></td><td>FITT plan display, weekly goal, rationale, doctor summary generation, safety checklist</td></tr>
+                    <tr><td><strong>Sessions Tab</strong></td><td>12 Phase 1 curriculum sessions, step progress, audio/text Artie sessions, goal setting, barrier problem-solving</td></tr>
+                    <tr><td><strong>Progress Tab</strong></td><td>Weekly minutes bar chart, weekly dose, adherence %, active days, program journey timeline, encouraging notes</td></tr>
+                    <tr><td><strong>Ask Artie</strong></td><td>Chat interface, common question chips, voice input, protocol-grounded answers, safety triage, symptom-aware responses</td></tr>
+                    <tr><td><strong>Guided Walk</strong></td><td>Live walking mode with timer, warm-up/main/cool-down stages, talk test, step count, pace feel, stop/pause controls</td></tr>
+                    <tr><td><strong>Doctor Summary</strong></td><td>Auto-generated clinical summary: context, prescription, adherence, symptoms, questions for doctor; copy to MyChart / PDF / email / share</td></tr>
+                    <tr><td><strong>Wearable Sync</strong></td><td>Apple HealthKit, Google Fit, Garmin, Fitbit connections; automatic activity detection; heart-rate-based dose calculation</td></tr>
+                    <tr><td><strong>Notifications</strong></td><td>Daily prescription reminders, session due nudges, progress celebrations, safety check-ins, streak alerts</td></tr>
+                </tbody>
+            </table>
+
+            <h3 id="doctor-web">4.2 Doctor Web App Features</h3>
+            <table>
+                <thead><tr><th>Module</th><th>Features</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Patient Roster</strong></td><td>Searchable list of assigned patients, phase, adherence %, alerts, last activity</td></tr>
+                    <tr><td><strong>Prescribe</strong></td><td>Eligibility screener, FITT prescription builder, precautions, welcome code generation</td></tr>
+                    <tr><td><strong>Patient Detail</strong></td><td>Adherence charts, weekly minutes/MET-hours, symptom log, session completion, AI flags, prescription history</td></tr>
+                    <tr><td><strong>Visit Summary</strong></td><td>One-page printable summary for oncology visits</td></tr>
+                    <tr><td><strong>Alerts</strong></td><td>Drop-off flags, red-flag symptoms, AI companion escalations, safety concerns</td></tr>
+                    <tr><td><strong>Communications</strong></td><td>View patient-shared summaries, respond to flags (no direct in-app messaging to patients)</td></tr>
+                </tbody>
+            </table>
+
+            <h3 id="admin-web">4.3 Admin Web App Features</h3>
+            <table>
+                <thead><tr><th>Module</th><th>Features</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>User Management</strong></td><td>Patients, doctors, admins; roles; site/tenant management; invite flows</td></tr>
+                    <tr><td><strong>Program Config</strong></td><td>Session templates, curriculum content, phase schedules, MET lookup tables, symptom rules, star mappings</td></tr>
+                    <tr><td><strong>AI Prompt Registry</strong></td><td>Versioned prompts for Artie, A/B testing, override logging, safety guardrails</td></tr>
+                    <tr><td><strong>Analytics</strong></td><td>Cohort enrollment, adherence, symptom trends, engagement, outcomes dashboards</td></tr>
+                    <tr><td><strong>Support Tools</strong></td><td>Impersonation (with audit), flag review, export tools, audit logs</td></tr>
+                    <tr><td><strong>Billing &amp; Operations</strong></td><td>Subscription status, usage reports, reimbursement documentation</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="tech-stack">
+            <h2>5. Tech Stack</h2>
+
+            <h3>Recommended Stack</h3>
+            <table>
+                <thead><tr><th>Layer</th><th>Technology</th><th>Rationale</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Patient Mobile</strong></td><td>React Native + Expo (SDK 52+)</td><td>Single codebase for iOS &amp; Android; native module access; OTA updates via EAS; push notifications; in-app purchases ready</td></tr>
+                    <tr><td><strong>Doctor Web</strong></td><td>React 19 + TypeScript + Vite</td><td>Fast, typed, shared components with admin; SPA deployable to Vercel/Netlify</td></tr>
+                    <tr><td><strong>Admin Web</strong></td><td>React 19 + TypeScript + Vite</td><td>Shared design system and API client with doctor web app</td></tr>
+                    <tr><td><strong>Mobile Navigation</strong></td><td>Expo Router</td><td>File-based routing, deep links, shared navigation patterns</td></tr>
+                    <tr><td><strong>State Management</strong></td><td>Zustand + TanStack Query</td><td>Lightweight global state + robust server-state caching</td></tr>
+                    <tr><td><strong>Backend Option A</strong></td><td>Supabase</td><td>PostgreSQL, Auth, Realtime, Edge Functions, Storage in one platform; fastest time-to-market</td></tr>
+                    <tr><td><strong>Backend Option B</strong></td><td>AWS RDS + ECS/Fargate + S3 + ElastiCache</td><td>More control and lower cost per user at 30,000+ scale; higher ops overhead</td></tr>
+                    <tr><td><strong>API Layer</strong></td><td>Edge Functions (Deno) or Node.js REST</td><td>Wearable ingestion, AI orchestration, PDF generation, FHIR mapping</td></tr>
+                    <tr><td><strong>AI</strong></td><td>Anthropic Claude Sonnet + Haiku</td><td>Sonnet for complex reasoning (reflections, dose adjustments); Haiku for fast responses</td></tr>
+                    <tr><td><strong>Voice Transcription</strong></td><td>OpenAI Whisper API</td><td>Reliable audio-to-text for voice journals and session input</td></tr>
+                    <tr><td><strong>Push Notifications</strong></td><td>Expo Push + OneSignal</td><td>iOS APNs + Android FCM abstraction; rich targeting</td></tr>
+                    <tr><td><strong>Wearables</strong></td><td>react-native-health / HealthKit, Google Fit SDK, Garmin/Fitbit APIs</td><td>Native health data access on iOS and Android</td></tr>
+                    <tr><td><strong>Storage</strong></td><td>Supabase Storage or AWS S3</td><td>Voice recordings, PDF summaries, profile images</td></tr>
+                    <tr><td><strong>CI/CD</strong></td><td>EAS Build / Submit, GitHub Actions</td><td>Automated iOS/Android builds and web deploys</td></tr>
+                    <tr><td><strong>Monitoring</strong></td><td>Sentry + PostHog</td><td>Error tracking, session replay, product analytics</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Why React Native + Expo?</h3>
+            <div class="grid-2">
+                <div class="card">
+                    <h4>iOS &amp; Android from one codebase</h4>
+                    <p>Reduces mobile development effort by ~60% versus native Swift + Kotlin. One team, one language (TypeScript), consistent UX.</p>
+                </div>
+                <div class="card">
+                    <h4>Native integrations</h4>
+                    <p>Expo provides managed workflows for push notifications, camera, audio recording, health kit, and background tasks.</p>
+                </div>
+                <div class="card">
+                    <h4>OTA updates</h4>
+                    <p>Push bug fixes and content updates instantly without waiting for App Store review cycles.</p>
+                </div>
+                <div class="card">
+                    <h4>Future-proof</h4>
+                    <p>Can eject to bare workflow if advanced native modules are needed later; no rewrite required.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="architecture">
+            <h2>6. System Architecture</h2>
+
+            <div class="arch-diagram">
+                <div class="layer">
+                    <div class="layer-label">Clients</div>
+                    <div class="layer-row">
+                        <div class="box box-mobile"><strong>Patient App</strong><small>React Native + Expo<br>iOS &amp; Android</small></div>
+                        <div class="box box-web"><strong>Doctor Web</strong><small>React + Vite<br>Desktop browser</small></div>
+                        <div class="box box-web"><strong>Admin Web</strong><small>React + Vite<br>Desktop browser</small></div>
+                    </div>
+                </div>
+                <div class="arrow-down">↓</div>
+                <div class="layer">
+                    <div class="layer-label">Gateway &amp; Platform</div>
+                    <div class="layer-row">
+                        <div class="box box-api"><strong>Auth</strong><small>JWT + RBAC<br>MFA for clinicians</small></div>
+                        <div class="box box-api"><strong>REST / GraphQL</strong><small>RLS-enforced APIs</small></div>
+                        <div class="box box-api"><strong>Realtime</strong><small>WebSockets<br>Live alerts</small></div>
+                        <div class="box box-api"><strong>Storage</strong><small>Voice · PDFs · Images</small></div>
+                    </div>
+                </div>
+                <div class="arrow-down">↓</div>
+                <div class="layer">
+                    <div class="layer-label">Backend Services</div>
+                    <div class="layer-row">
+                        <div class="box box-infra">Prescription Engine<small>FITT + MET targets</small></div>
+                        <div class="box box-infra">Activity Ingest<small>Wearable sync · HR analysis</small></div>
+                        <div class="box box-infra">Adherence Engine<small>Weekly rollup · drop-off</small></div>
+                        <div class="box box-infra">Dose Modifier<small>Symptom rules</small></div>
+                        <div class="box box-infra">Notification Sender<small>Push · SMS · email</small></div>
+                    </div>
+                    <div class="layer-row" style="margin-top:0.5rem">
+                        <div class="box box-ai">AI Orchestrator<small>Claude routing</small></div>
+                        <div class="box box-ai">Reflection Gen<small>Session summaries</small></div>
+                        <div class="box box-ai">Star Assigner<small>Wearable → dose</small></div>
+                        <div class="box box-ai">Voice Transcribe<small>Whisper</small></div>
+                        <div class="box box-ai">PDF Generator<small>Doctor summaries</small></div>
+                    </div>
+                </div>
+                <div class="arrow-down">↓</div>
+                <div class="layer">
+                    <div class="layer-label">Data &amp; AI</div>
+                    <div class="layer-row">
+                        <div class="box box-db"><strong>PostgreSQL</strong><small>Patients · Rx · Sessions<br>Symptoms · Messages</small></div>
+                        <div class="box box-ai"><strong>Claude</strong><small>Sonnet + Haiku</small></div>
+                        <div class="box box-ext"><strong>Whisper</strong><small>Transcription</small></div>
+                        <div class="box box-ext"><strong>Wearables</strong><small>Apple · Google · Garmin · Fitbit</small></div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Data Flow Summary</h3>
+            <ol>
+                <li>Patient opens mobile app → authenticates via Supabase Auth (email/pass, magic link, or OAuth).</li>
+                <li>Onboarding collects treatment context, barriers, preferences, and wearable permissions.</li>
+                <li>Backend generates personalized FITT prescription with MET-hour target.</li>
+                <li>Daily: app shows prescription card; patient logs activity or syncs wearable.</li>
+                <li>Activity data flows to backend; adherence engine calculates minutes, MET-hours, adherence %.</li>
+                <li>Artie sessions run through AI orchestrator; responses are personalized, safety-checked, and stored.</li>
+                <li>Doctor web app surfaces patient roster, alerts, visit summaries, and adherence trends.</li>
+                <li>Admin web app manages users, curriculum, prompts, analytics, and exports.</li>
+            </ol>
+        </section>
+
+        <section id="data-model">
+            <h2>7. Core Data Model</h2>
+            <table>
+                <thead><tr><th>Entity</th><th>Key Fields</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>users</strong></td><td>id, email, role (patient|doctor|admin), site_id, mfa_enabled, created_at, last_active</td></tr>
+                    <tr><td><strong>patients</strong></td><td>user_id, diagnosis, stage, treatment_status, surgery_date, chemo_regimen, ecog, baseline_activity, barriers[], preferences[], language, onboarding_completed, current_phase</td></tr>
+                    <tr><td><strong>doctors</strong></td><td>user_id, npi, specialty, site_id, patients[]</td></tr>
+                    <tr><td><strong>prescriptions</strong></td><td>id, patient_id, doctor_id, phase, frequency, intensity_zone, duration_min, activity_types[], weekly_met_target, weekly_minute_target, precautions[], active, created_at</td></tr>
+                    <tr><td><strong>activity_logs</strong></td><td>id, patient_id, source (wearable|manual), activity_type, duration_min, heart_rate_avg, met_hours, steps, calories, started_at, synced_at</td></tr>
+                    <tr><td><strong>auto_detected</strong></td><td>id, patient_id, time_range, heart_rate_avg, calories, duration_min, labeled, label, ai_stars</td></tr>
+                    <tr><td><strong>symptom_reports</strong></td><td>id, patient_id, symptom_type, severity, chemo_cycle_day, notes, reported_at</td></tr>
+                    <tr><td><strong>sessions</strong></td><td>id, patient_id, phase, session_number, title, status, mode, ai_reflection, next_tips, completed_at</td></tr>
+                    <tr><td><strong>messages</strong></td><td>id, patient_id, from (patient|artie), text, is_voice, voice_url, flagged, created_at</td></tr>
+                    <tr><td><strong>voice_notes</strong></td><td>id, patient_id, transcript, audio_url, date, created_at</td></tr>
+                    <tr><td><strong>doctor_summaries</strong></td><td>id, patient_id, generated_at, content, format (pdf|text), shared_with[], mychart_copied</td></tr>
+                    <tr><td><strong>notifications</strong></td><td>id, user_id, type, title, message, action_route, dismissed, created_at</td></tr>
+                    <tr><td><strong>milestones</strong></td><td>id, patient_id, badge_id, unlocked, unlocked_at</td></tr>
+                    <tr><td><strong>adherence_snapshots</strong></td><td>id, patient_id, week_start, prescribed_met, achieved_met, adherence_pct, dropoff_flag, created_at</td></tr>
+                    <tr><td><strong>ai_interactions</strong></td><td>id, patient_id, model, prompt_template_id, input_context, output, flagged, latency_ms, cost_usd, created_at</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="infra-options">
+            <h2>8. Infrastructure Options</h2>
+
+            <h3>Option A: Supabase-First (Recommended for Launch)</h3>
+            <div class="card card-highlight">
+                <p><strong>Best for:</strong> Speed to market, built-in security, teams without dedicated DevOps.</p>
+                <ul>
+                    <li><strong>Database:</strong> Managed PostgreSQL with RLS policies</li>
+                    <li><strong>Auth:</strong> Supabase Auth with JWT, MFA, OAuth</li>
+                    <li><strong>Realtime:</strong> WebSockets for alerts and dashboard updates</li>
+                    <li><strong>Edge Functions:</strong> Deno serverless for AI orchestration, wearable ingestion, PDF generation</li>
+                    <li><strong>Storage:</strong> S3-compatible for voice recordings and PDFs</li>
+                    <li><strong>Limit:</strong> Cost-effective to ~10,000 active patients; beyond that, dedicated infrastructure becomes cheaper</li>
+                </ul>
+            </div>
+
+            <h3>Option B: AWS Production-Scale</h3>
+            <div class="card">
+                <p><strong>Best for:</strong> 10,000+ users, full compliance control, long-term cost optimization.</p>
+                <ul>
+                    <li><strong>Database:</strong> Amazon RDS PostgreSQL (Multi-AZ)</li>
+                    <li><strong>API:</strong> ECS/Fargate or EKS running Node.js/Express or Fastify</li>
+                    <li><strong>Auth:</strong> Cognito or Auth0</li>
+                    <li><strong>Storage:</strong> S3 with CloudFront signed URLs</li>
+                    <li><strong>Realtime:</strong> API Gateway WebSockets or ElastiCache (Redis)</li>
+                    <li><strong>AI:</strong> Direct Anthropic API integration via AWS Lambda or ECS tasks</li>
+                    <li><strong>Monitoring:</strong> CloudWatch, X-Ray, GuardDuty</li>
+                </ul>
+            </div>
+
+            <h3>Option C: Hybrid (Recommended for Scale)</h3>
+            <div class="card card-highlight">
+                <p><strong>Best for:</strong> Start fast on Supabase, migrate heavy tables to AWS as you grow.</p>
+                <ul>
+                    <li>Keep Supabase Auth, Realtime, and Storage for speed</li>
+                    <li>Move large time-series tables (activity_logs, symptom_reports, ai_interactions) to AWS RDS or TimescaleDB</li>
+                    <li>Run compute-heavy AI orchestration on AWS ECS/Lambda</li>
+                    <li>Use read replicas for doctor/admin dashboards</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="cost-estimates">
+            <h2>9. Infrastructure Cost Estimates</h2>
+            <p style="margin-bottom:1.5rem; color:var(--ink-light);">Monthly estimates across five scale points. Assumes average patient sends ~10 messages/week, completes ~1 session/week, records ~1 voice note/week, and has hourly wearable sync. <strong>AI usage is modeled at 2× baseline</strong> to account for retries, edge-case prompts, and exploratory chat.</p>
+
+            <div class="cost-grid">
+                <div class="cost-card">
+                    <h4>👤 10 Users</h4>
+                    <div class="price">~$96</div>
+                    <div class="per-user">~$9.60 / user / month</div>
+                    <table>
+                        <tr><td>Supabase Pro</td><td>$25</td></tr>
+                        <tr><td>Claude Haiku (~1,600 calls)</td><td>$8</td></tr>
+                        <tr><td>Claude Sonnet (~160 calls)</td><td>$48</td></tr>
+                        <tr><td>Whisper (~40 min)</td><td>$4</td></tr>
+                        <tr><td>Storage (5 GB)</td><td>$2</td></tr>
+                        <tr><td>Push / SMS</td><td>$3</td></tr>
+                        <tr><td>EAS Build / Hosting</td><td>$0</td></tr>
+                        <tr><td>Monitoring</td><td>$6</td></tr>
+                        <tr class="total-row"><td>Monthly Total</td><td>~$96</td></tr>
+                    </table>
+                </div>
+
+                <div class="cost-card">
+                    <h4>👥 100 Users</h4>
+                    <div class="price">~$837</div>
+                    <div class="per-user">~$8.37 / user / month</div>
+                    <table>
+                        <tr><td>Supabase Pro</td><td>$25</td></tr>
+                        <tr><td>Supabase DB add-on (25 GB)</td><td>$75</td></tr>
+                        <tr><td>Supabase Egress</td><td>$50</td></tr>
+                        <tr><td>Claude Haiku (~16K calls)</td><td>$80</td></tr>
+                        <tr><td>Claude Sonnet (~1,600 calls)</td><td>$480</td></tr>
+                        <tr><td>Whisper (~400 min)</td><td>$40</td></tr>
+                        <tr><td>Storage (50 GB)</td><td>$12</td></tr>
+                        <tr><td>Push / SMS</td><td>$25</td></tr>
+                        <tr><td>EAS Build / Hosting</td><td>$20</td></tr>
+                        <tr><td>Monitoring</td><td>$30</td></tr>
+                        <tr class="total-row"><td>Monthly Total</td><td>~$837</td></tr>
+                    </table>
+                </div>
+
+                <div class="cost-card popular">
+                    <h4>🏥 1,000 Users</h4>
+                    <div class="price">~$7,175</div>
+                    <div class="per-user">~$7.18 / user / month</div>
+                    <table>
+                        <tr><td>Supabase Pro</td><td>$25</td></tr>
+                        <tr><td>Supabase DB add-on (200 GB)</td><td>$300</td></tr>
+                        <tr><td>Supabase Egress</td><td>$250</td></tr>
+                        <tr><td>Supabase Edge Compute</td><td>$50</td></tr>
+                        <tr><td>Claude Haiku (~160K calls)</td><td>$800</td></tr>
+                        <tr><td>Claude Sonnet (~16K calls)</td><td>$4,800</td></tr>
+                        <tr><td>Whisper (~4,000 min)</td><td>$400</td></tr>
+                        <tr><td>Storage (500 GB)</td><td>$50</td></tr>
+                        <tr><td>Push / SMS</td><td>$150</td></tr>
+                        <tr><td>EAS Build / Hosting</td><td>$50</td></tr>
+                        <tr><td>Monitoring</td><td>$50</td></tr>
+                        <tr><td>Support / Ops tooling</td><td>$250</td></tr>
+                        <tr class="total-row"><td>Monthly Total</td><td>~$7,175</td></tr>
+                    </table>
+                </div>
+
+                <div class="cost-card">
+                    <h4>🏥 10,000 Users</h4>
+                    <div class="price">~$56,500</div>
+                    <div class="per-user">~$5.65 / user / month</div>
+                    <table>
+                        <tr><td>AWS RDS PostgreSQL (Multi-AZ)</td><td>$1,200</td></tr>
+                        <tr><td>AWS ECS/Fargate API</td><td>$1,500</td></tr>
+                        <tr><td>AWS ElastiCache (Redis)</td><td>$400</td></tr>
+                        <tr><td>AWS S3 + CloudFront</td><td>$350</td></tr>
+                        <tr><td>Auth0 / Cognito</td><td>$500</td></tr>
+                        <tr><td>Claude Haiku (~1.6M calls)</td><td>$8,000</td></tr>
+                        <tr><td>Claude Sonnet (~160K calls)</td><td>$48,000</td></tr>
+                        <tr><td>Whisper (~40,000 min)</td><td>$4,000</td></tr>
+                        <tr><td>Push / SMS</td><td>$1,200</td></tr>
+                        <tr><td>Monitoring / Sentry</td><td>$500</td></tr>
+                        <tr><td>DevOps / Support tools</td><td>$1,500</td></tr>
+                        <tr><td>App Store / Play fees</td><td>$300</td></tr>
+                        <tr class="total-row"><td>Monthly Total</td><td>~$56,500</td></tr>
+                    </table>
+                </div>
+
+                <div class="cost-card">
+                    <h4>🏥 30,000+ Users</h4>
+                    <div class="price">~$156,000+</div>
+                    <div class="per-user">~$5.20 / user / month</div>
+                    <table>
+                        <tr><td>AWS RDS PostgreSQL (cluster)</td><td>$3,000</td></tr>
+                        <tr><td>AWS ECS/Fargate (API + workers)</td><td>$4,000</td></tr>
+                        <tr><td>AWS ElastiCache cluster</td><td>$1,000</td></tr>
+                        <tr><td>AWS S3 + CloudFront</td><td>$1,000</td></tr>
+                        <tr><td>Auth0 Enterprise</td><td>$1,500</td></tr>
+                        <tr><td>Claude Haiku (~4.8M calls)</td><td>$24,000</td></tr>
+                        <tr><td>Claude Sonnet (~480K calls)</td><td>$144,000</td></tr>
+                        <tr><td>Whisper (~120,000 min)</td><td>$12,000</td></tr>
+                        <tr><td>Push / SMS</td><td>$3,500</td></tr>
+                        <tr><td>Monitoring / Sentry</td><td>$1,500</td></tr>
+                        <tr><td>DevOps / Support / QA</td><td>$4,000</td></tr>
+                        <tr><td>Compliance / Security</td><td>$2,000</td></tr>
+                        <tr><td>App Store / Play / EAS</td><td>$500</td></tr>
+                        <tr class="total-row"><td>Monthly Total</td><td>~$156,000+</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <h3>Cost Drivers &amp; Assumptions</h3>
+            <table>
+                <thead><tr><th>Driver</th><th>Assumption</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Supabase</strong></td><td>Pro tier ($25/mo) + DB size add-ons ($0.0125/GB/day) + egress overage ($0.09/GB). At 1K users, ~200 GB DB + 2.5 TB egress/month.</td></tr>
+                    <tr><td><strong>AWS alternative</strong></td><td>RDS db.r6g.2xlarge for 10K users, scaled up for 30K. ECS Fargate tasks for API and AI workers. S3 for voice/PDF storage.</td></tr>
+                    <tr><td><strong>Claude Haiku</strong></td><td>~1,600 calls/user/month (2× baseline) for nudges, classification, routing, FAQ, sentiment. ~$0.50 / 1M tokens; avg 2K tokens/call.</td></tr>
+                    <tr><td><strong>Claude Sonnet</strong></td><td>~160 calls/user/month (2× baseline) for reflections, dose adjustments, barrier strategies, red-flag triage. ~$3 / 1M input, $15 / 1M output; avg 4K input + 1K output/call.</td></tr>
+                    <tr><td><strong>Whisper</strong></td><td>~$0.006/minute. One voice note (~30 sec) + one check-in voice (~2 min) per user per week = ~2.5 min/user/week.</td></tr>
+                    <tr><td><strong>Storage</strong></td><td>Voice recordings (~5 MB each), PDF summaries (~1 MB each). Supabase: $0.021/GB/month; AWS S3: ~$0.023/GB/month.</td></tr>
+                    <tr><td><strong>Push / SMS</strong></td><td>Expo Push free to 10K subscribers; OneSignal $9/mo/1K beyond. Twilio SMS ~$0.0075/message (US).</td></tr>
+                    <tr><td><strong>Wearable APIs</strong></td><td>Apple HealthKit / Google Fit free via native SDK. Garmin free for basic activity. Fitbit enterprise pricing at scale.</td></tr>
+                    <tr><td><strong>Monitoring</strong></td><td>Sentry Team ($26/mo) + PostHog ($0/mo up to 1M events, then usage-based).</td></tr>
+                </tbody>
+            </table>
+
+            <div class="note">
+                <strong>Revenue context:</strong> At $5.20–$9.60 per user per month in infra cost under the 2× AI usage model, a B2B2C model charging health systems $25–$75 per patient per month still leaves margin, but direct-to-patient subscriptions below $30/month require strict AI caps and cost optimization.
+            </div>
+        </section>
+
+        <section id="scaling">
+            <h2>10. Scaling Strategy</h2>
+
+            <h3>Phase 1: Launch (0–1,000 users) — Supabase-First</h3>
+            <ul>
+                <li>Single Supabase project handles auth, database, realtime, storage, and edge functions.</li>
+                <li>Expo mobile app distributed via TestFlight and Google Play Internal Testing.</li>
+                <li>Doctor and admin web apps deployed on Vercel.</li>
+                <li>Focus: product-market fit, onboarding conversion, adherence.</li>
+            </ul>
+
+            <h3>Phase 2: Growth (1,000–10,000 users) — Optimize &amp; Partition</h3>
+            <ul>
+                <li>Add read replicas for doctor/admin dashboards.</li>
+                <li>Move time-series activity logs to a separate partition or TimescaleDB hypertable.</li>
+                <li>Implement AI response caching for common questions.</li>
+                <li>Add CDN for static assets and voice playback.</li>
+                <li>Introduce feature flags and staged rollouts via LaunchDarkly or PostHog.</li>
+            </ul>
+
+            <h3>Phase 3: Scale (10,000–30,000+ users) — AWS Hybrid</h3>
+            <ul>
+                <li>Migrate core database to AWS RDS with Multi-AZ and read replicas.</li>
+                <li>Move AI orchestration and PDF generation to ECS/Fargate for predictable scaling.</li>
+                <li>Implement data retention policies: purge voice audio after 90 days, keep transcripts.</li>
+                <li>Shard by site/health system for multi-tenancy.</li>
+                <li>24/7 monitoring, on-call rotation, SOC 2 / HIPAA audit preparation.</li>
+            </ul>
+
+            <h3>Performance Targets</h3>
+            <table>
+                <thead><tr><th>Metric</th><th>Target</th></tr></thead>
+                <tbody>
+                    <tr><td>Mobile app cold start</td><td>&lt; 2 seconds</td></tr>
+                    <tr><td>API response time (p95)</td><td>&lt; 300 ms</td></tr>
+                    <tr><td>AI response time (Haiku)</td><td>&lt; 1.5 seconds</td></tr>
+                    <tr><td>AI response time (Sonnet)</td><td>&lt; 5 seconds</td></tr>
+                    <tr><td>Wearable sync latency</td><td>&lt; 15 minutes</td></tr>
+                    <tr><td>Push notification delivery</td><td>&lt; 30 seconds</td></tr>
+                    <tr><td>Doctor dashboard load</td><td>&lt; 2 seconds</td></tr>
+                    <tr><td>Uptime</td><td>99.9%</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="security">
+            <h2>11. Security &amp; Compliance</h2>
+            <table>
+                <thead><tr><th>Area</th><th>Measure</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Authentication</strong></td><td>Supabase Auth or Auth0 with JWT, refresh tokens, MFA for doctors/admins, OAuth (Apple/Google)</td></tr>
+                    <tr><td><strong>Authorization</strong></td><td>Row-Level Security (RLS) policies; patients see only their data; doctors see only assigned patients; admins see site-scoped data</td></tr>
+                    <tr><td><strong>Encryption</strong></td><td>TLS 1.3 in transit; AES-256 at rest; encrypted backups</td></tr>
+                    <tr><td><strong>PHI Handling</strong></td><td>Minimize PHI logging; tokenize identifiers; audit all access</td></tr>
+                    <tr><td><strong>AI Safety</strong></td><td>Prompt guardrails; red-flag detection; human escalation; no AI-generated diagnoses</td></tr>
+                    <tr><td><strong>Audit Logs</strong></td><td>Immutable audit trail for logins, data access, prescription changes, AI flags</td></tr>
+                    <tr><td><strong>Compliance</strong></td><td>HIPAA Business Associate Agreements (BAA); GDPR data processing agreements; PIPEDA/PHIPA alignment for Canada</td></tr>
+                    <tr><td><strong>Vulnerability</strong></td><td>Dependabot, Snyk, penetration testing, annual security review</td></tr>
+                    <tr><td><strong>Data Retention</strong></td><td>Audio purged after 90 days (transcripts kept); export &amp; deletion workflows for GDPR/CCPA</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="risks">
+            <h2>12. Risks &amp; Mitigation</h2>
+            <table>
+                <thead><tr><th>Risk</th><th>Impact</th><th>Mitigation</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Excess AI usage / runaway API costs</strong></td><td class="risk-high">High</td><td>Hard per-user daily/monthly call and token caps; rate limiting per patient; automated alerts when usage spikes; flag accounts exceeding thresholds for immediate review; fallback to cached responses and static content</td></tr>
+                    <tr><td><strong>Wearable sync unreliable</strong></td><td class="risk-med">Medium</td><td>Manual fallback logging for patients without wearables, clear sync status, retry logic, Apple Health + Google Fit first</td></tr>
+                    <tr><td><strong>App Store rejection</strong></td><td class="risk-med">Medium</td><td>Follow Apple/Google health app guidelines, provide medical disclaimers, avoid unverified health claims</td></tr>
+                    <tr><td><strong>Doctor adoption low</strong></td><td class="risk-high">High</td><td>Minimal workflow disruption, visit-ready summary, EHR integration roadmap, prescribe in under 60 seconds</td></tr>
+                    <tr><td><strong>HIPAA compliance gaps</strong></td><td class="risk-high">High</td><td>Sign BAAs, encrypt everything, audit logs, RLS, regular security reviews, legal review before launch</td></tr>
+                    <tr><td><strong>Scale beyond Supabase limits</strong></td><td class="risk-low">Low</td><td>Design schema for migration, use UUIDs, avoid Supabase-specific lock-in, plan AWS hybrid at 10K users</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>13. Next Steps</h2>
+            <ol>
+                <li><strong>Approve this plan</strong> — confirm stack, scope, timeline, and budget.</li>
+                <li><strong>Set up repositories and accounts</strong> — GitHub, Supabase, Expo, Anthropic, Sentry, PostHog.</li>
+                <li><strong>Assign team</strong> — mobile engineers, full-stack engineers, designer, clinical advisor.</li>
+                <li><strong>Begin build</strong> — monorepo setup, design system, auth, onboarding.</li>
+            </ol>
+        </section>
+
+        <div class="footer">
+            <p>OncoMotionRx Implementation Plan v1.0 — June 2026</p>
+            <p style="margin-top:0.5rem;">Based on final designs in <strong>oncomotionrx-designs.html</strong> · Patient mobile (iOS &amp; Android) · Doctor web · Admin web</p>
+        </div>
+    </main>
+</div>
+
+<script>
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-list a');
+
+    function onScroll() {
+        const scrollPos = window.scrollY + 120;
+        sections.forEach(section => {
+            if (scrollPos >= section.offsetTop && scrollPos < section.offsetTop + section.offsetHeight) {
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === '#' + section.id) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+        });
+    }
+
+    window.addEventListener('scroll', onScroll);
+    onScroll();
+</script>
+
+</body>
+</html>

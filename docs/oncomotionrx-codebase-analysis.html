@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OncoMotionRx Codebase Analysis</title>
+    <style>
+      body { margin: 0; font-family: Inter, Arial, sans-serif; background: #F7F4ED; color: #1E2421; line-height: 1.6; }
+      main { max-width: 1040px; margin: 0 auto; padding: 40px 20px 72px; }
+      h1, h2 { font-family: "Bricolage Grotesque", Inter, Arial, sans-serif; }
+      h1 { font-size: clamp(2rem, 5vw, 4rem); line-height: 1.05; }
+      h2 { color: #2D5A4A; margin-top: 32px; }
+      section { border: 1px solid #DCE7DD; border-radius: 24px; background: #fffaf0; padding: 22px; margin-top: 18px; }
+      code { background: #DCE7DD; border-radius: 8px; padding: 2px 6px; }
+      ul { padding-left: 1.25rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>OncoMotionRx Codebase Analysis</h1>
+      <section>
+        <h2>Current structure</h2>
+        <ul>
+          <li><code>app/(patient)</code> contains patient mobile web routes.</li>
+          <li><code>components/onco/demo</code> contains frontend-only demo screens and dashboards.</li>
+          <li><code>lib/onco/demo</code> contains localStorage-backed demo state and actions.</li>
+          <li><code>components/onco/operations</code> contains the shared admin/app-provider Operations Console shell and AI usage components.</li>
+          <li><code>app/api</code> still contains legacy backend routes and should be handled in the backend cleanup phase, not this frontend pass.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Landing/login changes</h2>
+        <ul>
+          <li><code>app/page.tsx</code> is now a polished OncoMotionRx landing page with embedded <code>DemoRoleSelectPanel</code>.</li>
+          <li><code>app/demo-role-select/page.tsx</code> reuses the same panel as a standalone role-selection page.</li>
+          <li><code>/patient/login</code> keeps a patient entry path but directs new patients toward onboarding.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Onboarding privacy logic</h2>
+        <ul>
+          <li>Self-start captures email/name and sets <code>onboardingStartMode = self</code>.</li>
+          <li>Clinic code captures email and links site without PHI.</li>
+          <li>Patient invite code requires verification before prefill.</li>
+          <li>Store actions document the intended backend contract: submit code, verify invite, confirm profile, and clear invite flow.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Operations console</h2>
+        <ul>
+          <li>Admin and app-provider screens share layout components while keeping role guards and separate routes.</li>
+          <li>AI usage dashboards provide the next billing/ops reporting surface.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Supabase tables next</h2>
+        <ul>
+          <li>Core: users/profiles, sites, roles, patients, invite codes, onboarding answers, prescriptions, activities, symptoms, notifications.</li>
+          <li>Operations: AI usage events, report exports, billing rollups, audit events, prompt versions, MET catalog, program sessions.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Readiness notes</h2>
+        <ul>
+          <li>Web: add PWA manifest, offline state, push-notification opt-in, and production analytics.</li>
+          <li>iOS/Android: prepare Expo adapters for timers, health data, push notifications, voice, clipboard, and sharing.</li>
+          <li>UX: make data tables more mobile-native and add backend error/retry states.</li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>

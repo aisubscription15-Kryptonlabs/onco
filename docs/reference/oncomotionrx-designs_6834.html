@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OncoMotionRx — App Designs</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #ECE7DB;
+    color: #1E2421;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page-head {
+    text-align: center;
+    padding: 56px 24px 8px;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  .brand-row {
+    display: inline-flex; align-items: center; gap: 10px; margin-bottom: 20px;
+  }
+  .brand-mark {
+    width: 38px; height: 38px; border-radius: 12px; background: #2D5A4A;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .brand-mark i { color: #F7F4ED; font-size: 21px; }
+  .brand-name {
+    font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700;
+    font-size: 22px; letter-spacing: -0.02em;
+  }
+  .page-head h1 {
+    font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800;
+    font-size: 40px; letter-spacing: -0.03em; line-height: 1.08; margin-bottom: 14px;
+  }
+  .page-head p {
+    font-size: 16px; line-height: 1.6; color: #5B635D;
+  }
+  /* palette legend */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 18px; justify-content: center;
+    margin: 30px auto 0; max-width: 720px; padding: 0 24px;
+  }
+  .swatch { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #5B635D; font-weight: 500; }
+  .chip { width: 22px; height: 22px; border-radius: 7px; border: 1px solid rgba(0,0,0,0.06); }
+  /* section nav */
+  .section-label {
+    max-width: 1240px; margin: 56px auto 0; padding: 0 32px;
+  }
+  .section-label h2 {
+    font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800;
+    font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #2D5A4A;
+    padding-bottom: 10px; border-bottom: 1.5px solid #D6D0C2;
+  }
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 40px 28px;
+    max-width: 1240px;
+    margin: 28px auto 0;
+    padding: 0 32px;
+  }
+  .screen-block { display: flex; flex-direction: column; align-items: center; }
+  .screen-caption {
+    margin-bottom: 14px; text-align: center;
+  }
+  .screen-caption .num {
+    font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700;
+    font-size: 12px; color: #C66B3D; letter-spacing: 0.04em;
+  }
+  .screen-caption .title {
+    font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700;
+    font-size: 17px; letter-spacing: -0.01em; margin-top: 2px;
+  }
+  .screen-caption .desc {
+    font-size: 12.5px; color: #8A918B; margin-top: 3px; max-width: 280px; line-height: 1.45;
+  }
+  /* phone shell */
+  .phone {
+    width: 320px; background: #111714; border-radius: 40px; padding: 9px;
+    box-shadow: 0 24px 48px -16px rgba(30,36,33,0.35), 0 6px 14px -6px rgba(30,36,33,0.2);
+  }
+  .screen {
+    border-radius: 32px; overflow: hidden; position: relative;
+  }
+  .screen.cream { background: #F7F4ED; color: #1E2421; }
+  .screen.sage  { background: #2D5A4A; color: #F7F4ED; }
+  .statusbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 24px 0; font-size: 12px; font-weight: 600;
+  }
+  .statusbar .icons { display: flex; gap: 5px; align-items: center; }
+  .pad { padding-left: 19px; padding-right: 19px; }
+  .home-indicator { display: flex; justify-content: center; padding-bottom: 7px; padding-top: 4px; }
+  .home-indicator span { width: 112px; height: 5px; border-radius: 3px; }
+  /* generic helpers */
+  .h-xl { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; letter-spacing: -0.02em; }
+  .h-md { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; letter-spacing: -0.01em; }
+  .btn-dark { width:100%; background:#1E2421; color:#F7F4ED; border:none; border-radius:14px; padding:14px; font-family:'Inter',sans-serif; font-size:14px; font-weight:600; }
+  .btn-cream { width:100%; background:#F7F4ED; color:#1E2421; border:none; border-radius:13px; padding:13px; font-family:'Inter',sans-serif; font-size:13px; font-weight:600; }
+  .btn-out { width:100%; background:transparent; color:#1E2421; border:1.4px solid #C9CFC8; border-radius:14px; padding:13px; font-family:'Inter',sans-serif; font-size:14px; font-weight:600; }
+  .stepper { display:flex; gap:4px; flex:1; }
+  .stepper div { flex:1; height:4px; border-radius:100px; }
+  .pill { border-radius:100px; font-weight:600; display:inline-flex; align-items:center; }
+  .navbar {
+    background:#FFFFFF; border-top:1px solid #E7E3D8; display:flex; padding:9px 6px 4px;
+  }
+  .navbar .item { flex:1; text-align:center; }
+  .navbar .item i { font-size:20px; }
+  .navbar .item p { font-size:10px; margin-top:2px; }
+  .navbar-bottom { background:#FFFFFF; display:flex; justify-content:center; padding-bottom:7px; }
+  .footer { text-align:center; padding:64px 24px 72px; color:#8A918B; font-size:13px; }
+  /* print: one screen per page for clean PDF export */
+  @media print {
+    body { background:#fff; }
+    .page-head, .legend, .footer { page-break-after: avoid; }
+    .screen-block { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <div class="brand-row">
+    <div class="brand-mark"><i class="ti ti-walk"></i></div>
+    <span class="brand-name">OncoMotionRx</span>
+  </div>
+  <h1>App design screens</h1>
+  <p>A structured movement program for life during and after cancer treatment, guided by Artie. High-fidelity reference screens — patient-started, doctor-shareable, clinically grounded.</p>
+  <div class="legend">
+    <div class="swatch"><span class="chip" style="background:#F7F4ED"></span>Cream base</div>
+    <div class="swatch"><span class="chip" style="background:#1E2421"></span>Ink</div>
+    <div class="swatch"><span class="chip" style="background:#2D5A4A"></span>Forest sage</div>
+    <div class="swatch"><span class="chip" style="background:#C66B3D"></span>Terracotta</div>
+    <div class="swatch"><span class="chip" style="background:#DCE7DD"></span>Soft sage</div>
+    <div class="swatch"><span class="chip" style="background:#E8C9B0"></span>Warm sand</div>
+  </div>
+  <p style="font-size:13px;margin-top:22px;color:#A39C8C;">Bricolage Grotesque (display) · Inter (text). Open in a browser to screenshot, or print to PDF for handoff.</p>
+</div>
+
+<!-- ============ ONBOARDING ============ -->
+<div class="section-label"><h2>Onboarding · Self-start flow</h2></div>
+<div class="gallery">
+
+  <!-- WELCOME -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">START</div><div class="title">Welcome</div><div class="desc">Two-path start: independent or care-team code</div></div>
+    <div class="phone"><div class="screen cream">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div class="pad" style="padding-top:24px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:30px;height:30px;border-radius:10px;background:#2D5A4A;display:flex;align-items:center;justify-content:center;"><i class="ti ti-walk" style="color:#F7F4ED;font-size:17px;"></i></div>
+          <span class="h-md" style="font-size:17px;">OncoMotionRx</span>
+        </div>
+        <svg viewBox="0 0 320 110" style="width:100%;display:block;margin:28px 0 22px;">
+          <circle cx="58" cy="58" r="42" fill="#DCE7DD"/><circle cx="126" cy="46" r="28" fill="#E8C9B0"/>
+          <path d="M 168 84 Q 198 28 236 60 Q 268 86 300 52" fill="none" stroke="#2D5A4A" stroke-width="7" stroke-linecap="round"/>
+          <circle cx="300" cy="52" r="9" fill="#C66B3D"/>
+        </svg>
+        <h1 class="h-xl" style="font-size:31px;line-height:1.08;margin-bottom:13px;">Movement,<br>made for recovery.</h1>
+        <p style="font-size:14.5px;line-height:1.55;color:#5B635D;margin-bottom:28px;">A structured movement program built for life during and after cancer treatment — guided by Artie, your personal activity consultant.</p>
+        <button class="btn-dark" style="margin-bottom:11px;display:flex;align-items:center;justify-content:center;gap:8px;">Start on my own <i class="ti ti-arrow-right"></i></button>
+        <button class="btn-out" style="margin-bottom:18px;">I have a care team code</button>
+        <p style="font-size:12px;line-height:1.5;color:#8A918B;text-align:center;margin-bottom:24px;">You can share your plan and progress with your oncology team anytime.</p>
+      </div>
+      <div class="home-indicator"><span style="background:#1E2421;"></span></div>
+    </div></div>
+  </div>
+
+  <!-- TREATMENT CONTEXT -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">STEP 1 / 6</div><div class="title">Treatment context</div><div class="desc">Plain language, optional fields, privacy upfront</div></div>
+    <div class="phone"><div class="screen cream">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div class="pad" style="padding-top:14px;">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:14px;">
+          <i class="ti ti-chevron-left" style="font-size:20px;color:#8A918B;"></i>
+          <div class="stepper"><div style="background:#2D5A4A;"></div><div style="background:#DCD8CC;"></div><div style="background:#DCD8CC;"></div><div style="background:#DCD8CC;"></div><div style="background:#DCD8CC;"></div><div style="background:#DCD8CC;"></div></div>
+          <span style="font-size:12px;font-weight:600;color:#8A918B;">1/6</span>
+        </div>
+        <h1 class="h-xl" style="font-size:24px;line-height:1.15;margin-bottom:8px;">Tell us a bit about your treatment</h1>
+        <p style="font-size:13.5px;line-height:1.5;color:#5B635D;margin-bottom:16px;">This shapes your plan. Share only what you're comfortable with — everything here is optional.</p>
+        <p style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#8A918B;margin-bottom:7px;">Cancer type</p>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:15px;padding:13px 15px;display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;"><span style="font-size:14px;font-weight:500;">Colon cancer</span><i class="ti ti-chevron-down" style="font-size:17px;color:#8A918B;"></i></div>
+        <p style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#8A918B;margin-bottom:7px;">Where are you in treatment?</p>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:15px;">
+          <span class="pill" style="background:#FFF;border:1px solid #E7E3D8;padding:9px 13px;font-size:13px;color:#3A403C;">Before treatment</span>
+          <span class="pill" style="background:#FFF;border:1px solid #E7E3D8;padding:9px 13px;font-size:13px;color:#3A403C;">In active treatment</span>
+          <span class="pill" style="background:#2D5A4A;padding:9px 13px;font-size:13px;color:#F7F4ED;">Finished treatment</span>
+        </div>
+        <p style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#8A918B;margin-bottom:7px;">Treatment included</p>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:15px;">
+          <span class="pill" style="background:#2D5A4A;padding:9px 13px;font-size:13px;color:#F7F4ED;"><i class="ti ti-check" style="font-size:12px;margin-right:4px;"></i>Surgery</span>
+          <span class="pill" style="background:#2D5A4A;padding:9px 13px;font-size:13px;color:#F7F4ED;"><i class="ti ti-check" style="font-size:12px;margin-right:4px;"></i>Chemotherapy</span>
+          <span class="pill" style="background:#FFF;border:1px solid #E7E3D8;padding:9px 13px;font-size:13px;color:#3A403C;">Radiation</span>
+        </div>
+        <div style="background:#DCE7DD;border-radius:13px;padding:11px 15px;display:flex;gap:9px;align-items:flex-start;margin-bottom:14px;"><i class="ti ti-lock" style="font-size:16px;color:#2D5A4A;flex-shrink:0;margin-top:1px;"></i><p style="font-size:12px;line-height:1.5;color:#234B3D;">Your answers stay private. Nothing is shared with anyone — including your care team — unless you choose to.</p></div>
+        <button class="btn-dark" style="margin-bottom:9px;">Continue</button>
+        <p style="font-size:12.5px;font-weight:600;color:#8A918B;text-align:center;margin-bottom:18px;">Skip for now</p>
+      </div>
+      <div class="home-indicator"><span style="background:#1E2421;"></span></div>
+    </div></div>
+  </div>
+
+  <!-- BASELINE / ARTIE INTRO -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">STEP 2 / 6</div><div class="title">Baseline · Artie intro</div><div class="desc">Artie builds rapport before any goal is set</div></div>
+    <div class="phone"><div class="screen cream">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div class="pad" style="padding-top:14px;">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:16px;">
+          <i class="ti ti-chevron-left" style="font-size:20px;color:#8A918B;"></i>
+          <div class="stepper"><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#DCD8CC;"></div><div style="background:#DCD8CC;"></div><div style="background:#DCD8CC;"></div><div style="background:#DCD8CC;"></div></div>
+          <span style="font-size:12px;font-weight:600;color:#8A918B;">2/6</span>
+        </div>
+        <div style="display:flex;gap:11px;align-items:flex-start;margin-bottom:18px;">
+          <div style="width:42px;height:42px;border-radius:50%;background:#C66B3D;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-walk" style="font-size:21px;color:#FCF7F0;"></i></div>
+          <div><p style="font-size:12.5px;font-weight:600;color:#C66B3D;margin-bottom:4px;">Hi, I'm Artie — your activity consultant.</p><h1 class="h-xl" style="font-size:22px;line-height:1.18;">What did movement look like before cancer?</h1></div>
+        </div>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:15px;padding:13px 15px;display:flex;align-items:center;gap:11px;margin-bottom:8px;"><div style="width:20px;height:20px;border-radius:50%;border:2px solid #C9CFC8;flex-shrink:0;"></div><p style="font-size:13.5px;font-weight:500;">I was pretty active — exercise was part of my life</p></div>
+        <div style="background:#FFF;border:1.5px solid #2D5A4A;border-radius:15px;padding:13px 15px;display:flex;align-items:center;gap:11px;margin-bottom:8px;"><div style="width:20px;height:20px;border-radius:50%;background:#2D5A4A;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><div style="width:7px;height:7px;border-radius:50%;background:#F7F4ED;"></div></div><p style="font-size:13.5px;font-weight:500;">I moved some, but nothing regular</p></div>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:15px;padding:13px 15px;display:flex;align-items:center;gap:11px;margin-bottom:16px;"><div style="width:20px;height:20px;border-radius:50%;border:2px solid #C9CFC8;flex-shrink:0;"></div><p style="font-size:13.5px;font-weight:500;">I wasn't very active, even before</p></div>
+        <p style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#8A918B;margin-bottom:7px;">And right now?</p>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:15px;padding:13px 15px;margin-bottom:13px;"><p style="font-size:13.5px;line-height:1.5;color:#3A403C;">Honestly, walking to the mailbox wipes me out some days. I used to garden a lot and I miss it.</p></div>
+        <div style="background:#EFE0D2;border-radius:13px;padding:11px 15px;display:flex;gap:9px;align-items:flex-start;margin-bottom:14px;"><i class="ti ti-heart" style="font-size:16px;color:#C66B3D;flex-shrink:0;margin-top:1px;"></i><p style="font-size:12px;line-height:1.5;color:#6B4F36;">Thanks for being honest. There's no wrong answer — we build from wherever you are today.</p></div>
+        <button class="btn-dark" style="margin-bottom:18px;">Continue</button>
+      </div>
+      <div class="home-indicator"><span style="background:#1E2421;"></span></div>
+    </div></div>
+  </div>
+
+  <!-- SAFETY -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">STEP 3 / 6</div><div class="title">Safety screen</div><div class="desc">Red-flag check routes to care team, gently</div></div>
+    <div class="phone"><div class="screen cream">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div class="pad" style="padding-top:14px;">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:14px;">
+          <i class="ti ti-chevron-left" style="font-size:20px;color:#8A918B;"></i>
+          <div class="stepper"><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#DCD8CC;"></div><div style="background:#DCD8CC;"></div><div style="background:#DCD8CC;"></div></div>
+          <span style="font-size:12px;font-weight:600;color:#8A918B;">3/6</span>
+        </div>
+        <h1 class="h-xl" style="font-size:23px;line-height:1.15;margin-bottom:8px;">Before we build your plan, a quick safety check</h1>
+        <p style="font-size:13.5px;line-height:1.5;color:#5B635D;margin-bottom:16px;">Are you currently experiencing any of these? Be honest — this just helps us keep your plan safe.</p>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:14px;padding:13px 15px;display:flex;align-items:center;gap:11px;margin-bottom:8px;"><div style="width:22px;height:22px;border-radius:7px;border:2px solid #C9CFC8;flex-shrink:0;"></div><p style="font-size:13.5px;font-weight:500;">Chest pain or pressure</p></div>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:14px;padding:13px 15px;display:flex;align-items:center;gap:11px;margin-bottom:8px;"><div style="width:22px;height:22px;border-radius:7px;border:2px solid #C9CFC8;flex-shrink:0;"></div><p style="font-size:13.5px;font-weight:500;">Severe shortness of breath</p></div>
+        <div style="background:#FFF;border:1.5px solid #2D5A4A;border-radius:14px;padding:13px 15px;display:flex;align-items:center;gap:11px;margin-bottom:8px;"><div style="width:22px;height:22px;border-radius:7px;background:#2D5A4A;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-check" style="font-size:14px;color:#F7F4ED;"></i></div><p style="font-size:13.5px;font-weight:500;">Dizziness or lightheadedness</p></div>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:14px;padding:13px 15px;display:flex;align-items:center;gap:11px;margin-bottom:8px;"><div style="width:22px;height:22px;border-radius:7px;border:2px solid #C9CFC8;flex-shrink:0;"></div><p style="font-size:13.5px;font-weight:500;">Fever</p></div>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:14px;padding:13px 15px;display:flex;align-items:center;gap:11px;margin-bottom:8px;"><div style="width:22px;height:22px;border-radius:7px;border:2px solid #C9CFC8;flex-shrink:0;"></div><p style="font-size:13.5px;font-weight:500;">New weakness or numbness</p></div>
+        <div style="background:#F4F1E9;border:1px solid #E7E3D8;border-radius:14px;padding:13px 15px;display:flex;align-items:center;gap:11px;margin-bottom:12px;"><div style="width:22px;height:22px;border-radius:7px;border:2px solid #C9CFC8;flex-shrink:0;"></div><p style="font-size:13.5px;font-weight:600;color:#5B635D;">None of these</p></div>
+        <div style="background:#DCE7DD;border-radius:12px;padding:11px 15px;display:flex;gap:9px;align-items:flex-start;margin-bottom:14px;"><i class="ti ti-info-circle" style="font-size:16px;color:#2D5A4A;flex-shrink:0;margin-top:1px;"></i><p style="font-size:12px;line-height:1.5;color:#234B3D;">You checked dizziness. We'll pause plan setup and suggest checking with your care team first — we'll help you know what to ask.</p></div>
+        <button class="btn-dark" style="margin-bottom:18px;">Continue</button>
+      </div>
+      <div class="home-indicator"><span style="background:#1E2421;"></span></div>
+    </div></div>
+  </div>
+
+  <!-- PREFERENCES -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">STEP 4 / 6</div><div class="title">Preferences</div><div class="desc">Remembers gardening from the free-text answer</div></div>
+    <div class="phone"><div class="screen cream">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div class="pad" style="padding-top:14px;">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:14px;">
+          <i class="ti ti-chevron-left" style="font-size:20px;color:#8A918B;"></i>
+          <div class="stepper"><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#DCD8CC;"></div><div style="background:#DCD8CC;"></div></div>
+          <span style="font-size:12px;font-weight:600;color:#8A918B;">4/6</span>
+        </div>
+        <h1 class="h-xl" style="font-size:23px;line-height:1.15;margin-bottom:8px;">What kind of movement sounds doable?</h1>
+        <p style="font-size:13.5px;line-height:1.5;color:#5B635D;margin-bottom:16px;">Pick anything that appeals — even a little. We'll start with one.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px;">
+          <div style="background:#2D5A4A;border-radius:16px;padding:15px;position:relative;"><i class="ti ti-circle-check" style="position:absolute;top:11px;right:11px;font-size:17px;color:#A9C5B4;"></i><i class="ti ti-walk" style="font-size:25px;color:#F7F4ED;"></i><p style="font-size:13.5px;font-weight:600;margin-top:7px;color:#F7F4ED;">Walking</p></div>
+          <div style="background:#2D5A4A;border-radius:16px;padding:15px;position:relative;"><i class="ti ti-circle-check" style="position:absolute;top:11px;right:11px;font-size:17px;color:#A9C5B4;"></i><i class="ti ti-plant-2" style="font-size:25px;color:#F7F4ED;"></i><p style="font-size:13.5px;font-weight:600;margin-top:7px;color:#F7F4ED;">Gardening</p></div>
+          <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:16px;padding:15px;"><i class="ti ti-bike" style="font-size:25px;color:#5B635D;"></i><p style="font-size:13.5px;font-weight:600;margin-top:7px;">Cycling</p></div>
+          <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:16px;padding:15px;"><i class="ti ti-swimming" style="font-size:25px;color:#5B635D;"></i><p style="font-size:13.5px;font-weight:600;margin-top:7px;">Swimming</p></div>
+          <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:16px;padding:15px;"><i class="ti ti-barbell" style="font-size:25px;color:#5B635D;"></i><p style="font-size:13.5px;font-weight:600;margin-top:7px;">Gym</p></div>
+          <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:16px;padding:15px;"><i class="ti ti-home-heart" style="font-size:25px;color:#5B635D;"></i><p style="font-size:13.5px;font-weight:600;margin-top:7px;">At home</p></div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;">
+          <span class="pill" style="background:#FFF;border:1px solid #E7E3D8;padding:8px 13px;font-size:12.5px;color:#3A403C;"><i class="ti ti-users" style="font-size:13px;margin-right:4px;"></i>With others</span>
+          <span class="pill" style="background:#2D5A4A;padding:8px 13px;font-size:12.5px;color:#F7F4ED;"><i class="ti ti-sun" style="font-size:13px;margin-right:4px;"></i>Outdoors</span>
+          <span class="pill" style="background:#FFF;border:1px solid #E7E3D8;padding:8px 13px;font-size:12.5px;color:#3A403C;"><i class="ti ti-help-circle" style="font-size:13px;margin-right:4px;"></i>I don't know</span>
+        </div>
+        <div style="background:#EFE0D2;border-radius:13px;padding:11px 15px;display:flex;gap:9px;align-items:flex-start;margin-bottom:14px;"><i class="ti ti-sparkles" style="font-size:16px;color:#C66B3D;flex-shrink:0;margin-top:1px;"></i><p style="font-size:12px;line-height:1.5;color:#6B4F36;">You mentioned missing your garden. Gardening absolutely counts — we can build it into your plan.</p></div>
+        <button class="btn-dark" style="margin-bottom:18px;">Continue</button>
+      </div>
+      <div class="home-indicator"><span style="background:#1E2421;"></span></div>
+    </div></div>
+  </div>
+
+  <!-- BARRIERS -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">STEP 4 / 6</div><div class="title">Barriers</div><div class="desc">Framed as planning intel, never excuses</div></div>
+    <div class="phone"><div class="screen cream">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div class="pad" style="padding-top:14px;">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:14px;">
+          <i class="ti ti-chevron-left" style="font-size:20px;color:#8A918B;"></i>
+          <div class="stepper"><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#DCD8CC;"></div><div style="background:#DCD8CC;"></div></div>
+          <span style="font-size:12px;font-weight:600;color:#8A918B;">4/6</span>
+        </div>
+        <h1 class="h-xl" style="font-size:23px;line-height:1.15;margin-bottom:8px;">What's most likely to get in the way?</h1>
+        <p style="font-size:13.5px;line-height:1.5;color:#5B635D;margin-bottom:16px;">These aren't excuses — they're planning information. Artie designs around them.</p>
+        <p style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#8A918B;margin-bottom:7px;">Body</p>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:13px;">
+          <span class="pill" style="background:#2D5A4A;padding:9px 13px;font-size:13px;color:#F7F4ED;"><i class="ti ti-check" style="font-size:12px;margin-right:4px;"></i>Fatigue</span>
+          <span class="pill" style="background:#2D5A4A;padding:9px 13px;font-size:13px;color:#F7F4ED;"><i class="ti ti-check" style="font-size:12px;margin-right:4px;"></i>Numb feet / neuropathy</span>
+          <span class="pill" style="background:#FFF;border:1px solid #E7E3D8;padding:9px 13px;font-size:13px;color:#3A403C;">Nausea</span>
+          <span class="pill" style="background:#2D5A4A;padding:9px 13px;font-size:13px;color:#F7F4ED;"><i class="ti ti-check" style="font-size:12px;margin-right:4px;"></i>Need bathrooms nearby</span>
+        </div>
+        <p style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#8A918B;margin-bottom:7px;">Mind</p>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:13px;">
+          <span class="pill" style="background:#FFF;border:1px solid #E7E3D8;padding:9px 13px;font-size:13px;color:#3A403C;">Low motivation</span>
+          <span class="pill" style="background:#2D5A4A;padding:9px 13px;font-size:13px;color:#F7F4ED;"><i class="ti ti-check" style="font-size:12px;margin-right:4px;"></i>Fear of overdoing it</span>
+          <span class="pill" style="background:#FFF;border:1px solid #E7E3D8;padding:9px 13px;font-size:13px;color:#3A403C;">Feeling self-conscious</span>
+        </div>
+        <p style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#8A918B;margin-bottom:7px;">Life</p>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;">
+          <span class="pill" style="background:#FFF;border:1px solid #E7E3D8;padding:9px 13px;font-size:13px;color:#3A403C;">No safe place to walk</span>
+          <span class="pill" style="background:#FFF;border:1px solid #E7E3D8;padding:9px 13px;font-size:13px;color:#3A403C;">Weather</span>
+          <span class="pill" style="background:#FFF;border:1px solid #E7E3D8;padding:9px 13px;font-size:13px;color:#3A403C;">No time</span>
+        </div>
+        <div style="background:#EFE0D2;border-radius:13px;padding:11px 15px;display:flex;gap:9px;align-items:flex-start;margin-bottom:14px;"><i class="ti ti-heart" style="font-size:16px;color:#C66B3D;flex-shrink:0;margin-top:1px;"></i><p style="font-size:12px;line-height:1.5;color:#6B4F36;">Fear of overdoing it is one of the most common things people tell us. Your plan starts smaller than you think — on purpose.</p></div>
+        <button class="btn-dark" style="margin-bottom:18px;">Continue</button>
+      </div>
+      <div class="home-indicator"><span style="background:#1E2421;"></span></div>
+    </div></div>
+  </div>
+
+  <!-- ENVIRONMENT -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">STEP 5 / 6</div><div class="title">Environment scan</div><div class="desc">Sidewalks, safety, bathrooms, indoor backup</div></div>
+    <div class="phone"><div class="screen cream">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div class="pad" style="padding-top:14px;">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:14px;">
+          <i class="ti ti-chevron-left" style="font-size:20px;color:#8A918B;"></i>
+          <div class="stepper"><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#DCD8CC;"></div></div>
+          <span style="font-size:12px;font-weight:600;color:#8A918B;">5/6</span>
+        </div>
+        <h1 class="h-xl" style="font-size:23px;line-height:1.15;margin-bottom:8px;">Where will movement happen?</h1>
+        <p style="font-size:13.5px;line-height:1.5;color:#5B635D;margin-bottom:16px;">Quick yes or no — this helps Artie suggest routes and backups that actually work for you.</p>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:14px;padding:12px 15px;display:flex;align-items:center;gap:11px;margin-bottom:8px;"><i class="ti ti-road" style="font-size:19px;color:#5B635D;flex-shrink:0;"></i><p style="font-size:13.5px;font-weight:500;flex:1;">Sidewalks or paths near home</p><div style="width:44px;height:26px;border-radius:100px;background:#2D5A4A;position:relative;"><div style="width:20px;height:20px;border-radius:50%;background:#F7F4ED;position:absolute;top:3px;right:3px;"></div></div></div>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:14px;padding:12px 15px;display:flex;align-items:center;gap:11px;margin-bottom:8px;"><i class="ti ti-shield-check" style="font-size:19px;color:#5B635D;flex-shrink:0;"></i><p style="font-size:13.5px;font-weight:500;flex:1;">I feel safe walking in my area</p><div style="width:44px;height:26px;border-radius:100px;background:#2D5A4A;position:relative;"><div style="width:20px;height:20px;border-radius:50%;background:#F7F4ED;position:absolute;top:3px;right:3px;"></div></div></div>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:14px;padding:12px 15px;display:flex;align-items:center;gap:11px;margin-bottom:8px;"><i class="ti ti-toilet-paper" style="font-size:19px;color:#5B635D;flex-shrink:0;"></i><p style="font-size:13.5px;font-weight:500;flex:1;">Bathrooms along my usual routes</p><div style="width:44px;height:26px;border-radius:100px;background:#DCD8CC;position:relative;"><div style="width:20px;height:20px;border-radius:50%;background:#FFF;position:absolute;top:3px;left:3px;"></div></div></div>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:14px;padding:12px 15px;display:flex;align-items:center;gap:11px;margin-bottom:8px;"><i class="ti ti-barbell" style="font-size:19px;color:#5B635D;flex-shrink:0;"></i><p style="font-size:13.5px;font-weight:500;flex:1;">Access to a gym or community center</p><div style="width:44px;height:26px;border-radius:100px;background:#DCD8CC;position:relative;"><div style="width:20px;height:20px;border-radius:50%;background:#FFF;position:absolute;top:3px;left:3px;"></div></div></div>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:14px;padding:12px 15px;display:flex;align-items:center;gap:11px;margin-bottom:8px;"><i class="ti ti-stairs" style="font-size:19px;color:#5B635D;flex-shrink:0;"></i><p style="font-size:13.5px;font-weight:500;flex:1;">Space to move indoors at home</p><div style="width:44px;height:26px;border-radius:100px;background:#2D5A4A;position:relative;"><div style="width:20px;height:20px;border-radius:50%;background:#F7F4ED;position:absolute;top:3px;right:3px;"></div></div></div>
+        <div style="background:#DCE7DD;border-radius:12px;padding:11px 15px;display:flex;gap:9px;align-items:flex-start;margin:12px 0 14px;"><i class="ti ti-bulb" style="font-size:16px;color:#2D5A4A;flex-shrink:0;margin-top:1px;"></i><p style="font-size:12px;line-height:1.5;color:#234B3D;">Noted: limited bathroom access on routes. Artie will suggest short loops near home and indoor backups for tougher days.</p></div>
+        <button class="btn-dark" style="margin-bottom:18px;">Continue</button>
+      </div>
+      <div class="home-indicator"><span style="background:#1E2421;"></span></div>
+    </div></div>
+  </div>
+
+  <!-- SOCIAL SUPPORT -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">STEP 5 / 6</div><div class="title">Social support</div><div class="desc">Optional support-person invite; solo is fine</div></div>
+    <div class="phone"><div class="screen cream">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div class="pad" style="padding-top:14px;">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:14px;">
+          <i class="ti ti-chevron-left" style="font-size:20px;color:#8A918B;"></i>
+          <div class="stepper"><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#DCD8CC;"></div></div>
+          <span style="font-size:12px;font-weight:600;color:#8A918B;">5/6</span>
+        </div>
+        <h1 class="h-xl" style="font-size:23px;line-height:1.15;margin-bottom:8px;">Who's in your corner?</h1>
+        <p style="font-size:13.5px;line-height:1.5;color:#5B635D;margin-bottom:16px;">People who move with support tend to stick with it. Totally optional — going solo is fine too.</p>
+        <div style="background:#FFF;border:1.5px solid #2D5A4A;border-radius:16px;padding:15px;display:flex;align-items:center;gap:12px;margin-bottom:8px;"><div style="width:40px;height:40px;border-radius:50%;background:#DCE7DD;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-heart-handshake" style="font-size:20px;color:#2D5A4A;"></i></div><div style="flex:1;"><p style="font-size:14px;font-weight:600;">Invite a support person</p><p style="font-size:12px;color:#8A918B;margin-top:2px;">They'll see gentle updates — never your health details</p></div><div style="width:21px;height:21px;border-radius:50%;background:#2D5A4A;display:flex;align-items:center;justify-content:center;"><i class="ti ti-check" style="font-size:13px;color:#F7F4ED;"></i></div></div>
+        <div style="background:#F4F1E9;border-radius:15px;padding:13px 15px;margin-bottom:11px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:9px;"><div style="width:34px;height:34px;border-radius:50%;background:#E8C9B0;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#6B4226;">J</div><div style="flex:1;"><p style="font-size:13.5px;font-weight:600;">Jordan (spouse)</p><p style="font-size:11.5px;color:#8A918B;margin-top:1px;">Invite sent · pending</p></div><span class="pill" style="background:#DCE7DD;color:#2D5A4A;font-size:11px;padding:4px 10px;">Walk buddy</span></div><p style="font-size:12px;line-height:1.5;color:#5B635D;font-style:italic;">"Hi Jordan — Sam is starting a movement program for cancer recovery and picked you as their support person…"</p></div>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:16px;padding:13px 15px;display:flex;align-items:center;gap:12px;margin-bottom:8px;"><div style="width:40px;height:40px;border-radius:50%;background:#F4F1E9;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-bell" style="font-size:19px;color:#5B635D;"></i></div><div style="flex:1;"><p style="font-size:14px;font-weight:600;">Family reminders</p><p style="font-size:12px;color:#8A918B;margin-top:2px;">Let Jordan nudge you on walk days</p></div><div style="width:21px;height:21px;border-radius:50%;border:2px solid #C9CFC8;"></div></div>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:16px;padding:13px 15px;display:flex;align-items:center;gap:12px;margin-bottom:14px;"><div style="width:40px;height:40px;border-radius:50%;background:#F4F1E9;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-user" style="font-size:19px;color:#5B635D;"></i></div><div style="flex:1;"><p style="font-size:14px;font-weight:600;">I'd rather do this on my own</p><p style="font-size:12px;color:#8A918B;margin-top:2px;">You can always add someone later</p></div><div style="width:21px;height:21px;border-radius:50%;border:2px solid #C9CFC8;"></div></div>
+        <button class="btn-dark" style="margin-bottom:18px;">Continue</button>
+      </div>
+      <div class="home-indicator"><span style="background:#1E2421;"></span></div>
+    </div></div>
+  </div>
+
+  <!-- GOAL + TRACKING -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">STEP 6 / 6</div><div class="title">Goal &amp; tracking</div><div class="desc">Personal anchor + optional wearable connect</div></div>
+    <div class="phone"><div class="screen cream">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div class="pad" style="padding-top:14px;">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:14px;">
+          <i class="ti ti-chevron-left" style="font-size:20px;color:#8A918B;"></i>
+          <div class="stepper"><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div><div style="background:#2D5A4A;"></div></div>
+          <span style="font-size:12px;font-weight:600;color:#8A918B;">6/6</span>
+        </div>
+        <h1 class="h-xl" style="font-size:23px;line-height:1.15;margin-bottom:8px;">Last thing — what matters most to you?</h1>
+        <p style="font-size:13.5px;line-height:1.5;color:#5B635D;margin-bottom:16px;">This becomes your anchor. Artie will bring it back to you on the hard days.</p>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:14px;padding:13px 15px;display:flex;align-items:center;gap:11px;margin-bottom:8px;"><i class="ti ti-battery-4" style="font-size:19px;color:#5B635D;flex-shrink:0;"></i><p style="font-size:13.5px;font-weight:500;">Rebuild my stamina and energy</p></div>
+        <div style="background:#2D5A4A;border-radius:14px;padding:13px 15px;display:flex;align-items:center;gap:11px;margin-bottom:8px;"><i class="ti ti-shield-heart" style="font-size:19px;color:#F7F4ED;flex-shrink:0;"></i><p style="font-size:13.5px;font-weight:600;color:#F7F4ED;">Feel less afraid of movement</p></div>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:14px;padding:13px 15px;display:flex;align-items:center;gap:11px;margin-bottom:8px;"><i class="ti ti-chart-arrows-vertical" style="font-size:19px;color:#5B635D;flex-shrink:0;"></i><p style="font-size:13.5px;font-weight:500;">Support my long-term health outcomes</p></div>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:14px;padding:13px 15px;display:flex;align-items:center;gap:11px;margin-bottom:16px;"><i class="ti ti-pencil" style="font-size:19px;color:#8A918B;flex-shrink:0;"></i><p style="font-size:13.5px;font-weight:500;color:#8A918B;">Write my own…</p></div>
+        <p style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#8A918B;margin-bottom:7px;">Track automatically? (optional)</p>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <div style="flex:1;background:#FFF;border:1.5px solid #2D5A4A;border-radius:15px;padding:12px 8px;text-align:center;"><i class="ti ti-heart-rate-monitor" style="font-size:20px;color:#2D5A4A;"></i><p style="font-size:11.5px;font-weight:600;margin-top:4px;">Apple Health</p></div>
+          <div style="flex:1;background:#FFF;border:1px solid #E7E3D8;border-radius:15px;padding:12px 8px;text-align:center;"><i class="ti ti-device-watch" style="font-size:20px;color:#5B635D;"></i><p style="font-size:11.5px;font-weight:500;margin-top:4px;">Wearable</p></div>
+          <div style="flex:1;background:#FFF;border:1px solid #E7E3D8;border-radius:15px;padding:12px 8px;text-align:center;"><i class="ti ti-pencil-plus" style="font-size:20px;color:#5B635D;"></i><p style="font-size:11.5px;font-weight:500;margin-top:4px;">By hand</p></div>
+        </div>
+        <button class="btn-dark" style="margin-bottom:18px;">Build my plan <i class="ti ti-arrow-right" style="margin-left:4px;"></i></button>
+      </div>
+      <div class="home-indicator"><span style="background:#1E2421;"></span></div>
+    </div></div>
+  </div>
+
+  <!-- PLAN REVEAL -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">PLAN REVEAL</div><div class="title">First prescription</div><div class="desc">"Built from your answers" — the payoff card</div></div>
+    <div class="phone"><div class="screen sage">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div class="pad" style="padding-top:24px;text-align:center;">
+        <div style="width:50px;height:50px;border-radius:50%;background:#C66B3D;display:inline-flex;align-items:center;justify-content:center;margin-bottom:13px;"><i class="ti ti-walk" style="font-size:25px;color:#FCF7F0;"></i></div>
+        <h1 class="h-xl" style="font-size:25px;line-height:1.12;margin-bottom:8px;color:#F7F4ED;">Sam, your first prescription is ready</h1>
+        <p style="font-size:13.5px;line-height:1.55;color:#C7D8CC;margin-bottom:18px;">It's small on purpose. We're building a foundation, not chasing a finish line.</p>
+      </div>
+      <div class="pad">
+        <div style="background:#F7F4ED;border-radius:20px;padding:18px 20px;margin-bottom:11px;">
+          <p style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#8A918B;margin-bottom:9px;">Weeks 1–2</p>
+          <p class="h-xl" style="font-size:22px;color:#1E2421;margin-bottom:4px;">Walk 10 minutes, 3 days a week</p>
+          <p style="font-size:13px;color:#5B635D;margin-bottom:13px;">Easy-to-moderate pace · ~2 MET-hours/week · gardening counts</p>
+          <div style="border-top:1px solid #E7E3D8;padding-top:11px;">
+            <p style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#8A918B;margin-bottom:7px;">Built from your answers</p>
+            <p style="font-size:12.5px;line-height:1.7;color:#3A403C;"><i class="ti ti-check" style="color:#2D5A4A;font-size:13px;"></i> Short sessions — you told us about fatigue<br><i class="ti ti-check" style="color:#2D5A4A;font-size:13px;"></i> Loops near home — bathroom access covered<br><i class="ti ti-check" style="color:#2D5A4A;font-size:13px;"></i> Flat, steady routes — gentler on numb feet<br><i class="ti ti-check" style="color:#2D5A4A;font-size:13px;"></i> Starts below your limit — fear of overdoing it</p>
+          </div>
+        </div>
+        <div style="background:rgba(247,244,237,0.1);border-radius:16px;padding:13px 16px;display:flex;gap:10px;align-items:center;margin-bottom:11px;"><i class="ti ti-shield-heart" style="font-size:19px;color:#E8C9B0;flex-shrink:0;"></i><p style="font-size:12px;line-height:1.5;color:#C7D8CC;">This plan doesn't replace medical advice. Unsure if exercise is safe? Generate a doctor summary and ask your oncology team first.</p></div>
+        <button class="btn-cream" style="padding:15px;font-size:14px;margin-bottom:9px;">Start my program</button>
+        <button style="width:100%;background:transparent;color:#F7F4ED;border:1.5px solid rgba(247,244,237,0.35);border-radius:14px;padding:13px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;margin-bottom:18px;"><i class="ti ti-file-text" style="margin-right:6px;"></i>Share with my doctor first</button>
+      </div>
+      <div class="home-indicator"><span style="background:#F7F4ED;"></span></div>
+    </div></div>
+  </div>
+
+</div>
+
+<!-- ============ CORE APP TABS ============ -->
+<div class="section-label"><h2>Core app · Bottom navigation tabs</h2></div>
+<div class="gallery">
+
+  <!-- TODAY -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">TAB · TODAY</div><div class="title">Home</div><div class="desc">Prescription-first with quick-log actions</div></div>
+    <div class="phone"><div class="screen cream">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div style="padding:18px 19px 0;display:flex;justify-content:space-between;align-items:flex-start;">
+        <div><p style="font-size:13px;color:#8A918B;margin-bottom:3px;font-weight:500;">Tuesday, June 9</p><h1 class="h-xl" style="font-size:25px;">Good morning, Sam</h1></div>
+        <div style="width:38px;height:38px;border-radius:50%;background:#E8C9B0;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#6B4226;">S</div>
+      </div>
+      <div class="pad" style="padding-top:11px;"><span class="pill" style="background:#DCE7DD;color:#2D5A4A;font-size:11.5px;padding:6px 12px;gap:6px;"><i class="ti ti-seeding" style="font-size:13px;"></i>Phase 1 · Building habits</span></div>
+      <div class="pad" style="padding-top:14px;">
+        <div style="background:#2D5A4A;border-radius:20px;padding:20px;">
+          <p style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A9C5B4;margin-bottom:9px;">Today's prescription</p>
+          <p class="h-md" style="font-size:23px;color:#F7F4ED;margin-bottom:5px;">Walk 10 minutes</p>
+          <p style="font-size:13px;color:#C7D8CC;margin-bottom:16px;line-height:1.5;">Easy-to-moderate pace. You should be able to talk, but not sing.</p>
+          <div style="display:flex;gap:8px;"><button class="btn-cream" style="flex:1;"><i class="ti ti-check" style="margin-right:5px;"></i>I did it</button><button style="flex:1;background:rgba(247,244,237,0.14);color:#F7F4ED;border:none;border-radius:12px;padding:12px 8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;">Log something else</button></div>
+          <div style="display:flex;gap:16px;margin-top:13px;justify-content:center;"><span style="font-size:12.5px;color:#C7D8CC;font-weight:500;"><i class="ti ti-moon" style="font-size:13px;vertical-align:-2px;"></i> I'm too tired</span><span style="font-size:12.5px;color:#C7D8CC;font-weight:500;"><i class="ti ti-stethoscope" style="font-size:13px;vertical-align:-2px;"></i> I have a symptom</span></div>
+        </div>
+      </div>
+      <div class="pad" style="padding-top:12px;">
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:20px;padding:18px 20px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:13px;"><p class="h-md" style="font-size:16px;">This week</p><span style="font-size:12px;color:#8A918B;font-weight:500;">Week 2 of 2</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:#5B635D;font-weight:500;">Intentional movement</span><span style="font-weight:600;">10 / 30 min</span></div>
+          <div style="height:8px;background:#ECE8DC;border-radius:100px;margin-bottom:14px;"><div style="width:33%;height:8px;background:#C66B3D;border-radius:100px;"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:#5B635D;font-weight:500;">Weekly dose</span><span style="font-weight:600;">0.7 / 2.0 MET-hrs</span></div>
+          <div style="height:8px;background:#ECE8DC;border-radius:100px;"><div style="width:35%;height:8px;background:#2D5A4A;border-radius:100px;"></div></div>
+        </div>
+      </div>
+      <div class="pad" style="padding-top:12px;padding-bottom:16px;">
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:20px;padding:16px 18px;display:flex;align-items:center;gap:13px;"><div style="width:44px;height:44px;border-radius:14px;background:#EFE0D2;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-message-circle" style="font-size:21px;color:#C66B3D;"></i></div><div style="flex:1;min-width:0;"><p style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#8A918B;margin-bottom:2px;">Next session with Artie</p><p style="font-size:14px;font-weight:600;">Session 2: Safety + hydration</p><p style="font-size:12px;color:#8A918B;margin-top:2px;">~8 min · Due Friday</p></div><i class="ti ti-chevron-right" style="font-size:19px;color:#B4B2A9;"></i></div>
+      </div>
+      <div class="navbar">
+        <div class="item"><i class="ti ti-home" style="color:#2D5A4A;"></i><p style="color:#2D5A4A;font-weight:600;">Today</p></div>
+        <div class="item"><i class="ti ti-clipboard-heart" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Prescription</p></div>
+        <div class="item"><i class="ti ti-calendar-event" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Sessions</p></div>
+        <div class="item"><i class="ti ti-chart-line" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Progress</p></div>
+        <div class="item"><i class="ti ti-message-circle" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Artie</p></div>
+      </div>
+      <div class="navbar-bottom"><span style="width:112px;height:5px;border-radius:3px;background:#1E2421;"></span></div>
+    </div></div>
+  </div>
+
+  <!-- PRESCRIPTION -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">TAB · PRESCRIPTION</div><div class="title">FITT plan</div><div class="desc">Plan, rationale, doctor summary, safety</div></div>
+    <div class="phone"><div class="screen cream">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div class="pad" style="padding-top:18px;"><h1 class="h-xl" style="font-size:25px;margin-bottom:4px;">Your prescription</h1><p style="font-size:13px;color:#8A918B;">Weeks 3–4 · Updates after your next session</p></div>
+      <div class="pad" style="padding-top:14px;">
+        <div style="background:#2D5A4A;border-radius:20px;padding:20px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px 12px;margin-bottom:14px;">
+            <div><p style="font-size:10.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A9C5B4;margin-bottom:3px;">Type</p><p class="h-md" style="font-size:18px;color:#F7F4ED;">Walking</p></div>
+            <div><p style="font-size:10.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A9C5B4;margin-bottom:3px;">Frequency</p><p class="h-md" style="font-size:18px;color:#F7F4ED;">3 days/wk</p></div>
+            <div><p style="font-size:10.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A9C5B4;margin-bottom:3px;">Time</p><p class="h-md" style="font-size:18px;color:#F7F4ED;">10 min</p></div>
+            <div><p style="font-size:10.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A9C5B4;margin-bottom:3px;">Intensity</p><p class="h-md" style="font-size:18px;color:#F7F4ED;">Easy–mod</p></div>
+          </div>
+          <div style="border-top:1px solid rgba(247,244,237,0.18);padding-top:13px;display:flex;justify-content:space-between;">
+            <div><p style="font-size:10.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A9C5B4;margin-bottom:2px;">Weekly goal</p><p style="font-size:14px;font-weight:600;color:#F7F4ED;">30 minutes</p></div>
+            <div style="text-align:right;"><p style="font-size:10.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A9C5B4;margin-bottom:2px;">Weekly dose</p><p style="font-size:14px;font-weight:600;color:#F7F4ED;">~2 MET-hrs</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="pad" style="padding-top:12px;">
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:18px;padding:16px 18px;"><p class="h-md" style="font-size:15px;margin-bottom:7px;"><i class="ti ti-bulb" style="font-size:16px;color:#C66B3D;vertical-align:-2px;"></i> Why this plan</p><p style="font-size:13px;line-height:1.55;color:#5B635D;">You reported fatigue and low baseline activity, so we're starting small. The goal is to build safely — not jump to 150 minutes overnight.</p></div>
+      </div>
+      <div class="pad" style="padding-top:12px;">
+        <div style="background:#EFE0D2;border-radius:18px;padding:18px 20px;">
+          <div style="display:flex;align-items:center;gap:11px;margin-bottom:11px;"><div style="width:40px;height:40px;border-radius:13px;background:#C66B3D;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-file-text" style="font-size:20px;color:#FCF7F0;"></i></div><div><p class="h-md" style="font-size:15px;color:#4A2E18;">Doctor summary</p><p style="font-size:12px;color:#8A6A4E;margin-top:1px;">Keep your oncology team in the loop</p></div></div>
+          <p style="font-size:12.5px;line-height:1.5;color:#6B4F36;margin-bottom:13px;">Generate a clean summary of your plan, progress, symptoms, and questions for your next visit.</p>
+          <button style="width:100%;background:#4A2E18;color:#FCF7F0;border:none;border-radius:12px;padding:13px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;">Generate doctor summary</button>
+        </div>
+      </div>
+      <div class="pad" style="padding-top:12px;padding-bottom:16px;">
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:18px;padding:16px 18px;"><p class="h-md" style="font-size:15px;margin-bottom:9px;"><i class="ti ti-shield-heart" style="font-size:16px;color:#2D5A4A;vertical-align:-2px;"></i> Check with your team first if you have</p><p style="font-size:12.5px;line-height:1.9;color:#5B635D;">Chest pain · severe shortness of breath · dizziness or fainting · fever during chemo · severe diarrhea · new weakness or numbness · uncontrolled pain</p></div>
+      </div>
+      <div class="navbar">
+        <div class="item"><i class="ti ti-home" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Today</p></div>
+        <div class="item"><i class="ti ti-clipboard-heart" style="color:#2D5A4A;"></i><p style="color:#2D5A4A;font-weight:600;">Prescription</p></div>
+        <div class="item"><i class="ti ti-calendar-event" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Sessions</p></div>
+        <div class="item"><i class="ti ti-chart-line" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Progress</p></div>
+        <div class="item"><i class="ti ti-message-circle" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Artie</p></div>
+      </div>
+      <div class="navbar-bottom"><span style="width:112px;height:5px;border-radius:3px;background:#1E2421;"></span></div>
+    </div></div>
+  </div>
+
+  <!-- SESSIONS -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">TAB · SESSIONS</div><div class="title">Curriculum</div><div class="desc">12 structured Phase 1 sessions</div></div>
+    <div class="phone"><div class="screen cream">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div class="pad" style="padding-top:18px;"><h1 class="h-xl" style="font-size:25px;margin-bottom:4px;">Sessions</h1><p style="font-size:13px;color:#8A918B;margin-bottom:11px;">Phase 1: Building habits · 2 of 12 complete</p><div style="height:7px;background:#ECE8DC;border-radius:100px;"><div style="width:17%;height:7px;background:#2D5A4A;border-radius:100px;"></div></div></div>
+      <div class="pad" style="padding-top:16px;">
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:16px;padding:13px 16px;display:flex;align-items:center;gap:12px;margin-bottom:9px;"><div style="width:36px;height:36px;border-radius:50%;background:#DCE7DD;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-check" style="font-size:18px;color:#2D5A4A;"></i></div><div style="flex:1;"><p style="font-size:13.5px;font-weight:600;">1 · Getting started</p><p style="font-size:11.5px;color:#8A918B;margin-top:1px;">Monitoring intensity · Completed May 26</p></div></div>
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:16px;padding:13px 16px;display:flex;align-items:center;gap:12px;margin-bottom:9px;"><div style="width:36px;height:36px;border-radius:50%;background:#DCE7DD;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-check" style="font-size:18px;color:#2D5A4A;"></i></div><div style="flex:1;"><p style="font-size:13.5px;font-weight:600;">2 · Safety + hydration</p><p style="font-size:11.5px;color:#8A918B;margin-top:1px;">What to wear · Completed June 6</p></div></div>
+        <div style="background:#2D5A4A;border-radius:16px;padding:16px;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:13px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(247,244,237,0.16);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class="h-md" style="font-size:15px;color:#F7F4ED;">3</span></div><div style="flex:1;"><p style="font-size:14px;font-weight:600;color:#F7F4ED;">Goal setting</p><p style="font-size:11.5px;color:#A9C5B4;margin-top:1px;">~8 minutes · Due Friday</p></div></div>
+          <p style="font-size:12.5px;line-height:1.5;color:#C7D8CC;margin-bottom:13px;">Artie reviews your last 2 weeks, helps you set a goal that fits your energy, and updates your prescription.</p>
+          <button class="btn-cream"><i class="ti ti-player-play" style="margin-right:6px;"></i>Start session 3</button>
+        </div>
+        <div style="padding:13px 4px 0;">
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 14px;"><span style="width:36px;text-align:center;font-size:13px;font-weight:600;color:#B4B2A9;">4</span><p style="font-size:13px;font-weight:500;color:#8A918B;">Tracking your movement</p></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 14px;"><span style="width:36px;text-align:center;font-size:13px;font-weight:600;color:#B4B2A9;">5</span><p style="font-size:13px;font-weight:500;color:#8A918B;">Fitness check-in</p></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 14px;"><span style="width:36px;text-align:center;font-size:13px;font-weight:600;color:#B4B2A9;">6</span><p style="font-size:13px;font-weight:500;color:#8A918B;">Why movement helps recovery</p></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 14px;"><span style="width:36px;text-align:center;font-size:13px;font-weight:600;color:#B4B2A9;">7</span><p style="font-size:13px;font-weight:500;color:#8A918B;">Overcoming barriers</p></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 14px 14px;"><span style="width:36px;text-align:center;font-size:12px;font-weight:600;color:#B4B2A9;">8–12</span><p style="font-size:13px;font-weight:500;color:#B4B2A9;">Support, routines, enjoyment, next phase</p></div>
+        </div>
+      </div>
+      <div class="navbar">
+        <div class="item"><i class="ti ti-home" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Today</p></div>
+        <div class="item"><i class="ti ti-clipboard-heart" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Prescription</p></div>
+        <div class="item"><i class="ti ti-calendar-event" style="color:#2D5A4A;"></i><p style="color:#2D5A4A;font-weight:600;">Sessions</p></div>
+        <div class="item"><i class="ti ti-chart-line" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Progress</p></div>
+        <div class="item"><i class="ti ti-message-circle" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Artie</p></div>
+      </div>
+      <div class="navbar-bottom"><span style="width:112px;height:5px;border-radius:3px;background:#1E2421;"></span></div>
+    </div></div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">TAB · PROGRESS</div><div class="title">Progress</div><div class="desc">Minutes, MET-hours, phase journey</div></div>
+    <div class="phone"><div class="screen cream">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div class="pad" style="padding-top:18px;"><h1 class="h-xl" style="font-size:25px;margin-bottom:4px;">Progress</h1><p style="font-size:13px;color:#8A918B;">You're building, week by week.</p></div>
+      <div class="pad" style="padding-top:14px;">
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:20px;padding:18px 20px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:15px;"><p class="h-md" style="font-size:16px;">Weekly minutes</p><span style="font-size:11.5px;font-weight:600;color:#2D5A4A;"><i class="ti ti-trend-up" style="font-size:13px;vertical-align:-2px;"></i> +10 vs last week</span></div>
+          <div style="display:flex;align-items:flex-end;gap:11px;height:100px;margin-bottom:6px;">
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;"><div style="height:18%;background:#DCD8CC;border-radius:7px 7px 4px 4px;"></div></div>
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;"><div style="height:40%;background:#9FBCA9;border-radius:7px 7px 4px 4px;"></div></div>
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;"><div style="height:67%;background:#2D5A4A;border-radius:7px 7px 4px 4px;"></div></div>
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;"><div style="height:100%;border:1.5px dashed #C9A285;border-radius:7px 7px 4px 4px;display:flex;align-items:flex-start;justify-content:center;padding-top:5px;"><span style="font-size:9.5px;font-weight:600;color:#C66B3D;">goal</span></div></div>
+          </div>
+          <div style="display:flex;gap:11px;font-size:11px;color:#8A918B;text-align:center;"><span style="flex:1;">May 25<br><b style="color:#5B635D;">5 min</b></span><span style="flex:1;">Jun 1<br><b style="color:#5B635D;">12 min</b></span><span style="flex:1;">Jun 8<br><b style="color:#1E2421;">20 min</b></span><span style="flex:1;">This wk<br><b style="color:#C66B3D;">30 min</b></span></div>
+        </div>
+      </div>
+      <div class="pad" style="padding-top:11px;display:flex;gap:11px;">
+        <div style="flex:1;background:#FFF;border:1px solid #E7E3D8;border-radius:16px;padding:15px;"><p style="font-size:11px;font-weight:600;color:#8A918B;margin-bottom:4px;">Weekly dose</p><p class="h-xl" style="font-size:22px;">1.4</p><p style="font-size:11px;color:#8A918B;margin-top:2px;">of 2.0 MET-hrs</p></div>
+        <div style="flex:1;background:#FFF;border:1px solid #E7E3D8;border-radius:16px;padding:15px;"><p style="font-size:11px;font-weight:600;color:#8A918B;margin-bottom:4px;">Adherence</p><p class="h-xl" style="font-size:22px;">67%</p><p style="font-size:11px;color:#8A918B;margin-top:2px;">4 of 6 sessions</p></div>
+        <div style="flex:1;background:#FFF;border:1px solid #E7E3D8;border-radius:16px;padding:15px;"><p style="font-size:11px;font-weight:600;color:#8A918B;margin-bottom:4px;">Active days</p><p class="h-xl" style="font-size:22px;">9</p><p style="font-size:11px;color:#8A918B;margin-top:2px;">since you started</p></div>
+      </div>
+      <div class="pad" style="padding-top:11px;">
+        <div style="background:#2D5A4A;border-radius:20px;padding:18px 20px;">
+          <p style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A9C5B4;margin-bottom:10px;">Your program journey</p>
+          <div style="display:flex;align-items:center;">
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;"><div style="width:30px;height:30px;border-radius:50%;background:#F7F4ED;display:flex;align-items:center;justify-content:center;"><i class="ti ti-seeding" style="font-size:15px;color:#2D5A4A;"></i></div><p style="font-size:10px;font-weight:600;color:#F7F4ED;margin-top:5px;text-align:center;">Building<br>habits</p></div>
+            <div style="flex:1;height:2px;background:rgba(247,244,237,0.25);margin-bottom:26px;"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;"><div style="width:30px;height:30px;border-radius:50%;background:rgba(247,244,237,0.16);display:flex;align-items:center;justify-content:center;"><i class="ti ti-plant" style="font-size:15px;color:#A9C5B4;"></i></div><p style="font-size:10px;font-weight:500;color:#A9C5B4;margin-top:5px;text-align:center;">Growing<br>stronger</p></div>
+            <div style="flex:1;height:2px;background:rgba(247,244,237,0.25);margin-bottom:26px;"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;"><div style="width:30px;height:30px;border-radius:50%;background:rgba(247,244,237,0.16);display:flex;align-items:center;justify-content:center;"><i class="ti ti-tree" style="font-size:15px;color:#A9C5B4;"></i></div><p style="font-size:10px;font-weight:500;color:#A9C5B4;margin-top:5px;text-align:center;">For<br>life</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="pad" style="padding-top:11px;padding-bottom:16px;">
+        <div style="background:#EFE0D2;border-radius:16px;padding:13px 16px;display:flex;gap:11px;align-items:center;"><i class="ti ti-quote" style="font-size:19px;color:#C66B3D;flex-shrink:0;"></i><p style="font-size:12.5px;line-height:1.5;color:#6B4F36;">Three weeks ago, a 5-minute walk felt hard. This week you did 20 minutes. That's not nothing — that's recovery.</p></div>
+      </div>
+      <div class="navbar">
+        <div class="item"><i class="ti ti-home" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Today</p></div>
+        <div class="item"><i class="ti ti-clipboard-heart" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Prescription</p></div>
+        <div class="item"><i class="ti ti-calendar-event" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Sessions</p></div>
+        <div class="item"><i class="ti ti-chart-line" style="color:#2D5A4A;"></i><p style="color:#2D5A4A;font-weight:600;">Progress</p></div>
+        <div class="item"><i class="ti ti-message-circle" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Artie</p></div>
+      </div>
+      <div class="navbar-bottom"><span style="width:112px;height:5px;border-radius:3px;background:#1E2421;"></span></div>
+    </div></div>
+  </div>
+
+  <!-- ASK ARTIE -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">TAB · ASK ARTIE</div><div class="title">Ask Artie</div><div class="desc">Protocol-grounded answers, safety triage</div></div>
+    <div class="phone"><div class="screen cream">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div class="pad" style="padding-top:18px;display:flex;align-items:center;gap:11px;">
+        <div style="width:42px;height:42px;border-radius:50%;background:#C66B3D;display:flex;align-items:center;justify-content:center;"><i class="ti ti-walk" style="font-size:21px;color:#FCF7F0;"></i></div>
+        <div><h1 class="h-xl" style="font-size:21px;">Ask Artie</h1><p style="font-size:12px;color:#8A918B;margin-top:1px;">Your activity consultant · Knows your plan</p></div>
+      </div>
+      <div class="pad" style="padding-top:16px;">
+        <p style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#8A918B;margin-bottom:9px;">Common questions</p>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;">
+          <span class="pill" style="background:#FFF;border:1px solid #E7E3D8;padding:8px 13px;font-size:12.5px;color:#3A403C;">Does gardening count?</span>
+          <span class="pill" style="background:#FFF;border:1px solid #E7E3D8;padding:8px 13px;font-size:12.5px;color:#3A403C;">I missed a whole week</span>
+          <span class="pill" style="background:#FFF;border:1px solid #E7E3D8;padding:8px 13px;font-size:12.5px;color:#3A403C;">My feet are numb</span>
+          <span class="pill" style="background:#FFF;border:1px solid #E7E3D8;padding:8px 13px;font-size:12.5px;color:#3A403C;">Can I swim?</span>
+        </div>
+      </div>
+      <div class="pad" style="padding-top:16px;min-height:280px;">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:13px;"><div style="background:#2D5A4A;border-radius:16px 4px 16px 16px;padding:12px 15px;max-width:78%;"><p style="font-size:13.5px;line-height:1.55;color:#F7F4ED;">I'm too tired today. Should I still walk?</p></div></div>
+        <div style="display:flex;gap:9px;margin-bottom:13px;"><div style="width:32px;height:32px;border-radius:50%;background:#C66B3D;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-walk" style="font-size:16px;color:#FCF7F0;"></i></div><div style="background:#FFF;border:1px solid #E7E3D8;border-radius:4px 16px 16px 16px;padding:12px 15px;max-width:84%;"><p style="font-size:13.5px;line-height:1.55;margin-bottom:9px;">Tiredness on its own doesn't always mean rest is the answer — gentle movement can ease treatment fatigue. But let's check first:</p><p style="font-size:13.5px;line-height:1.55;">Is this everyday tired, or something more — dizziness, fever, or feeling unwell in a new way?</p></div></div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-end;margin-bottom:13px;"><button style="background:transparent;border:1.5px solid #2D5A4A;color:#2D5A4A;border-radius:100px;padding:9px 15px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;">Just everyday tired</button><button style="background:transparent;border:1.5px solid #A3552F;color:#A3552F;border-radius:100px;padding:9px 15px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;">Something feels off</button></div>
+        <div style="display:flex;gap:9px;"><div style="width:32px;flex-shrink:0;"></div><div style="background:#DCE7DD;border-radius:4px 16px 16px 16px;padding:12px 15px;max-width:84%;"><p style="font-size:13px;line-height:1.55;color:#234B3D;"><i class="ti ti-sparkles" style="font-size:14px;vertical-align:-2px;"></i> If it's everyday tired: try just 5 minutes at an easy pace. You can stop anytime — showing up small still counts.</p></div></div>
+      </div>
+      <div class="pad" style="padding-top:8px;padding-bottom:14px;">
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:100px;padding:11px 17px;display:flex;align-items:center;gap:10px;"><span style="flex:1;font-size:13.5px;color:#B4B2A9;">Ask anything about your plan…</span><i class="ti ti-microphone" style="font-size:18px;color:#8A918B;"></i><div style="width:30px;height:30px;border-radius:50%;background:#1E2421;display:flex;align-items:center;justify-content:center;"><i class="ti ti-arrow-up" style="font-size:16px;color:#F7F4ED;"></i></div></div>
+      </div>
+      <div class="navbar">
+        <div class="item"><i class="ti ti-home" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Today</p></div>
+        <div class="item"><i class="ti ti-clipboard-heart" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Prescription</p></div>
+        <div class="item"><i class="ti ti-calendar-event" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Sessions</p></div>
+        <div class="item"><i class="ti ti-chart-line" style="color:#A8AEA8;"></i><p style="color:#A8AEA8;">Progress</p></div>
+        <div class="item"><i class="ti ti-message-circle" style="color:#2D5A4A;"></i><p style="color:#2D5A4A;font-weight:600;">Artie</p></div>
+      </div>
+      <div class="navbar-bottom"><span style="width:112px;height:5px;border-radius:3px;background:#1E2421;"></span></div>
+    </div></div>
+  </div>
+
+</div>
+
+<!-- ============ KEY FEATURE SCREENS ============ -->
+<div class="section-label"><h2>Key features · Sessions, summary &amp; guided movement</h2></div>
+<div class="gallery">
+
+  <!-- ARTIE SESSION -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">FEATURE</div><div class="title">Inside an Artie session</div><div class="desc">Step indicator + protocol-constrained replies</div></div>
+    <div class="phone"><div class="screen cream">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div class="pad" style="padding-top:14px;">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;"><i class="ti ti-x" style="font-size:21px;color:#8A918B;"></i><div style="flex:1;"><p class="h-md" style="font-size:15px;text-align:center;">Session 3 · Goal setting</p><p style="font-size:11px;color:#8A918B;text-align:center;margin-top:1px;">Step 2 of 5 · Review your week</p></div><i class="ti ti-dots" style="font-size:21px;color:#8A918B;"></i></div>
+        <div style="display:flex;gap:5px;"><div style="flex:1;height:4px;border-radius:100px;background:#2D5A4A;"></div><div style="flex:1;height:4px;border-radius:100px;background:#2D5A4A;"></div><div style="flex:1;height:4px;border-radius:100px;background:#DCD8CC;"></div><div style="flex:1;height:4px;border-radius:100px;background:#DCD8CC;"></div><div style="flex:1;height:4px;border-radius:100px;background:#DCD8CC;"></div></div>
+      </div>
+      <div class="pad" style="padding-top:18px;min-height:380px;">
+        <div style="display:flex;gap:9px;margin-bottom:13px;"><div style="width:32px;height:32px;border-radius:50%;background:#C66B3D;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-walk" style="font-size:16px;color:#FCF7F0;"></i></div><div style="background:#FFF;border:1px solid #E7E3D8;border-radius:4px 16px 16px 16px;padding:12px 15px;max-width:82%;"><p style="font-size:13.5px;line-height:1.55;">Nice to see you, Sam. Last week you completed 2 of your 3 walks — that's real progress for week two. 🌱</p></div></div>
+        <div style="display:flex;gap:9px;margin-bottom:13px;"><div style="width:32px;flex-shrink:0;"></div><div style="background:#FFF;border:1px solid #E7E3D8;border-radius:4px 16px 16px 16px;padding:12px 15px;max-width:82%;"><p style="font-size:13.5px;line-height:1.55;">Before we set your next goal, I'd like to understand the walk that didn't happen. What got in the way on Thursday?</p></div></div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:16px;"><div style="background:#2D5A4A;border-radius:16px 4px 16px 16px;padding:12px 15px;max-width:78%;"><p style="font-size:13.5px;line-height:1.55;color:#F7F4ED;">I was wiped out after my infusion. Couldn't get off the couch.</p></div></div>
+        <div style="display:flex;gap:9px;margin-bottom:14px;"><div style="width:32px;height:32px;border-radius:50%;background:#C66B3D;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-walk" style="font-size:16px;color:#FCF7F0;"></i></div><div style="background:#FFF;border:1px solid #E7E3D8;border-radius:4px 16px 16px 16px;padding:12px 15px;max-width:82%;"><p style="font-size:13.5px;line-height:1.55;">That's not a failure — that's information. Infusion days are predictably hard. Want to plan your walks around your treatment schedule?</p></div></div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-end;"><button style="background:transparent;border:1.5px solid #2D5A4A;color:#2D5A4A;border-radius:100px;padding:9px 15px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;">Yes, skip infusion days</button><button style="background:transparent;border:1.5px solid #2D5A4A;color:#2D5A4A;border-radius:100px;padding:9px 15px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;">Try shorter walks those days</button><button style="background:transparent;border:1.5px solid #C9CFC8;color:#5B635D;border-radius:100px;padding:9px 15px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;">Something else…</button></div>
+      </div>
+      <div class="pad" style="padding-top:8px;padding-bottom:14px;">
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:100px;padding:11px 17px;display:flex;align-items:center;gap:10px;"><span style="flex:1;font-size:13.5px;color:#B4B2A9;">Or type your answer…</span><i class="ti ti-microphone" style="font-size:18px;color:#8A918B;"></i><div style="width:30px;height:30px;border-radius:50%;background:#1E2421;display:flex;align-items:center;justify-content:center;"><i class="ti ti-arrow-up" style="font-size:16px;color:#F7F4ED;"></i></div></div>
+      </div>
+      <div class="home-indicator"><span style="background:#1E2421;"></span></div>
+    </div></div>
+  </div>
+
+  <!-- DOCTOR SUMMARY -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">FEATURE</div><div class="title">Doctor summary</div><div class="desc">Clinician-facing, MyChart / PDF / email export</div></div>
+    <div class="phone"><div class="screen cream">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div class="pad" style="padding-top:16px;display:flex;align-items:center;gap:11px;"><i class="ti ti-chevron-left" style="font-size:22px;color:#5B635D;"></i><h1 class="h-xl" style="font-size:20px;">Doctor summary</h1></div>
+      <div class="pad" style="padding-top:14px;">
+        <div style="background:#FFF;border:1px solid #E7E3D8;border-radius:16px;padding:18px 20px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #ECE8DC;padding-bottom:11px;margin-bottom:11px;"><div><p class="h-md" style="font-size:14px;">OncoMotionRx summary</p><p style="font-size:11.5px;color:#8A918B;margin-top:2px;">Sam Rivera · June 9, 2026</p></div><span class="pill" style="background:#DCE7DD;color:#2D5A4A;font-size:11px;padding:4px 10px;">Phase 1</span></div>
+          <p style="font-size:10.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#8A918B;margin-bottom:5px;">Context</p>
+          <p style="font-size:12.5px;line-height:1.55;color:#3A403C;margin-bottom:11px;">Stage III colon cancer, post-adjuvant chemotherapy. Self-enrolled May 2026. Goal: rebuild stamina.</p>
+          <p style="font-size:10.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#8A918B;margin-bottom:5px;">Current prescription</p>
+          <p style="font-size:12.5px;line-height:1.55;color:#3A403C;margin-bottom:11px;">Walking · 3 days/wk · 10 min · easy-to-moderate · ~2 MET-hrs/wk. Gradual progression toward +10 MET-hrs/wk above baseline.</p>
+          <p style="font-size:10.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#8A918B;margin-bottom:5px;">Adherence</p>
+          <p style="font-size:12.5px;line-height:1.55;color:#3A403C;margin-bottom:11px;">4 of 6 planned sessions (67%) over 2 weeks. Apple Health connected.</p>
+          <p style="font-size:10.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#8A918B;margin-bottom:5px;">Symptoms &amp; barriers</p>
+          <p style="font-size:12.5px;line-height:1.55;color:#3A403C;margin-bottom:11px;">Post-treatment fatigue, mild neuropathy, occasional diarrhea. No chest pain, severe dyspnea, dizziness, or syncope.</p>
+          <div style="background:#F4F1E9;border-radius:11px;padding:11px 13px;"><p style="font-size:10.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#8A918B;margin-bottom:5px;">Questions for you</p><p style="font-size:12.5px;line-height:1.6;color:#3A403C;">Any activity restrictions related to my treatment? Is neuropathy affecting my fall risk? Which symptoms should make me stop and call your office?</p></div>
+        </div>
+      </div>
+      <div class="pad" style="padding-top:14px;padding-bottom:22px;">
+        <button class="btn-dark" style="padding:15px;font-size:14.5px;margin-bottom:10px;"><i class="ti ti-copy" style="margin-right:6px;"></i>Copy for MyChart</button>
+        <div style="display:flex;gap:9px;"><button class="btn-out" style="flex:1;padding:12px 8px;font-size:13px;"><i class="ti ti-download" style="margin-right:4px;"></i>PDF</button><button class="btn-out" style="flex:1;padding:12px 8px;font-size:13px;"><i class="ti ti-mail" style="margin-right:4px;"></i>Email</button><button class="btn-out" style="flex:1;padding:12px 8px;font-size:13px;"><i class="ti ti-share" style="margin-right:4px;"></i>Share</button></div>
+      </div>
+      <div class="home-indicator"><span style="background:#1E2421;"></span></div>
+    </div></div>
+  </div>
+
+  <!-- GUIDED WALK -->
+  <div class="screen-block">
+    <div class="screen-caption"><div class="num">FEATURE</div><div class="title">Guided walk (live)</div><div class="desc">Inverted palette signals active "moving" mode</div></div>
+    <div class="phone"><div class="screen sage">
+      <div class="statusbar"><span>9:41</span><span class="icons"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>
+      <div class="pad" style="padding-top:18px;text-align:center;">
+        <span class="pill" style="background:rgba(247,244,237,0.14);padding:7px 14px;font-size:12px;color:#C7D8CC;gap:7px;"><span style="width:8px;height:8px;border-radius:50%;background:#E8C9B0;"></span>Guided walk · Main walk</span>
+        <p class="h-xl" style="font-size:58px;margin:16px 0 0;color:#F7F4ED;">06:24</p>
+        <p style="font-size:13.5px;color:#A9C5B4;margin:2px 0 16px;">of 10 minutes · warm-up done ✓</p>
+        <div style="display:flex;gap:5px;padding:0 12px;margin-bottom:20px;"><div style="flex:2;height:6px;border-radius:100px;background:#E8C9B0;"></div><div style="flex:6;height:6px;border-radius:100px;background:rgba(247,244,237,0.95);"><div style="width:55%;height:6px;border-radius:100px;background:#E8C9B0;"></div></div><div style="flex:2;height:6px;border-radius:100px;background:rgba(247,244,237,0.25);"></div></div>
+      </div>
+      <div class="pad">
+        <div style="background:rgba(247,244,237,0.1);border-radius:20px;padding:18px 20px;margin-bottom:11px;">
+          <div style="display:flex;gap:11px;align-items:flex-start;"><div style="width:34px;height:34px;border-radius:50%;background:#C66B3D;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-walk" style="font-size:17px;color:#FCF7F0;"></i></div><div><p style="font-size:14px;line-height:1.55;margin-bottom:4px;color:#F7F4ED;">You're doing great, Sam. Quick check — can you talk comfortably right now?</p><p style="font-size:12px;color:#A9C5B4;">Talk test: you should be able to talk, but not sing.</p></div></div>
+          <div style="display:flex;gap:8px;margin-top:14px;"><button class="btn-cream" style="flex:1;padding:11px 6px;font-size:12.5px;">Yes, easily</button><button style="flex:1;background:rgba(247,244,237,0.14);color:#F7F4ED;border:none;border-radius:11px;padding:11px 6px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;">A little breathless</button><button style="flex:1;background:rgba(247,244,237,0.14);color:#F7F4ED;border:none;border-radius:11px;padding:11px 6px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;">Struggling</button></div>
+        </div>
+        <div style="display:flex;gap:11px;margin-bottom:13px;">
+          <div style="flex:1;background:rgba(247,244,237,0.1);border-radius:16px;padding:13px 15px;"><p style="font-size:10.5px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#A9C5B4;margin-bottom:3px;">Steps</p><p class="h-xl" style="font-size:20px;color:#F7F4ED;">684</p></div>
+          <div style="flex:1;background:rgba(247,244,237,0.1);border-radius:16px;padding:13px 15px;"><p style="font-size:10.5px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#A9C5B4;margin-bottom:3px;">Pace feel</p><p class="h-xl" style="font-size:20px;color:#F7F4ED;">Easy</p></div>
+          <div style="flex:1;background:rgba(247,244,237,0.1);border-radius:16px;padding:13px 15px;"><p style="font-size:10.5px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#A9C5B4;margin-bottom:3px;">Dose</p><p class="h-xl" style="font-size:20px;color:#F7F4ED;">0.3</p></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:13px;padding-bottom:12px;"><button style="flex:1;background:rgba(247,244,237,0.14);color:#F7F4ED;border:none;border-radius:14px;padding:15px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;"><i class="ti ti-player-pause" style="margin-right:6px;"></i>Pause</button><button style="flex:1;background:#F0D9CE;color:#7A3B1E;border:none;border-radius:14px;padding:15px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;"><i class="ti ti-hand-stop" style="margin-right:6px;"></i>I need to stop</button></div>
+        <p style="font-size:11.5px;color:#A9C5B4;text-align:center;padding-bottom:16px;">Chest pain, dizziness, or unusual shortness of breath? Stop now — Artie will guide you.</p>
+      </div>
+      <div class="home-indicator"><span style="background:#F7F4ED;"></span></div>
+    </div></div>
+  </div>
+
+</div>
+
+<div class="footer">
+  OncoMotionRx — design reference · 17 screens · Bricolage Grotesque + Inter<br>
+  Patient-started, doctor-shareable, clinically grounded.
+</div>
+
+</body>
+</html>

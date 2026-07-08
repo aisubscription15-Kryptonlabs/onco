@@ -1,0 +1,23 @@
+services:
+  fhir-validator:
+    build:
+      context: ./infra/fhir-validator
+      dockerfile: Dockerfile
+    container_name: fhir-validator
+    ports:
+      - "8080:8080"
+    volumes:
+      # Persists the downloaded validator_cli.jar across container restarts
+      - fhir-validator-cache:/cache
+    environment:
+      CACHE_DIR: /cache
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 120s   # first run downloads ~120 MB JAR
+
+volumes:
+  fhir-validator-cache:

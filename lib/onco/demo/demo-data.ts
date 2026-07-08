@@ -1,0 +1,313 @@
+import type {
+  AuditEvent,
+  DemoAlert,
+  DemoPatient,
+  DemoPrompt,
+  DemoSite,
+  DemoState,
+  DemoUser,
+  MetCatalogItem,
+  PlatformSite,
+  ProgramSession,
+  PromptRegistryItem,
+  SiteRequest,
+  TeamMember,
+} from "./demo-types";
+
+export const demoUsers: DemoUser[] = [
+  { id: "patient-sam", name: "Sam Rivera", role: "patient", title: "Patient" },
+  { id: "doctor-maya", name: "Dr. Maya Chen", role: "doctor", title: "Oncologist" },
+  { id: "care-jordan", name: "Jordan Lee, RN", role: "care-team", title: "Care Team" },
+  { id: "admin-priya", name: "Priya Shah", role: "admin", title: "Site Admin" },
+  { id: "provider-ravi", name: "Ravi Kumar", role: "app-provider", title: "Platform Provider" },
+];
+
+export const demoSite: DemoSite = {
+  id: "gvoc",
+  name: "Green Valley Oncology Center",
+  city: "Austin, TX",
+  status: "Active",
+  inviteCode: "SAM-GVOC-7429",
+};
+
+export const demoPatients: DemoPatient[] = [
+  {
+    id: "sam-rivera",
+    name: "Sam Rivera",
+    cancerType: "Colon cancer",
+    treatmentStatus: "Finished treatment",
+    phase: "Phase 1",
+    adherence: 67,
+    activeDays: 9,
+    prescriptionStatus: "active",
+    flags: ["neuropathy", "bathroom access"],
+    prescription: { activity: "Walking", minutes: 10, daysPerWeek: 3, intensity: "Easy-to-moderate", metHours: 2 },
+  },
+  {
+    id: "maria-lopez",
+    name: "Maria Lopez",
+    cancerType: "Breast cancer",
+    treatmentStatus: "Active treatment",
+    phase: "Phase 1",
+    adherence: 28,
+    activeDays: 3,
+    prescriptionStatus: "low-adherence",
+    flags: ["fatigue flag", "missed week"],
+    prescription: { activity: "Walking", minutes: 6, daysPerWeek: 3, intensity: "Easy", metHours: 1.1 },
+  },
+  {
+    id: "daniel-kim",
+    name: "Daniel Kim",
+    cancerType: "Lymphoma",
+    treatmentStatus: "Surveillance",
+    phase: "Phase 2",
+    adherence: 92,
+    activeDays: 21,
+    prescriptionStatus: "high-adherence",
+    flags: ["progression ready"],
+    prescription: { activity: "Cycling", minutes: 18, daysPerWeek: 4, intensity: "Moderate", metHours: 4.5 },
+  },
+  {
+    id: "aisha-patel",
+    name: "Aisha Patel",
+    cancerType: "Ovarian cancer",
+    treatmentStatus: "Active treatment",
+    phase: "Phase 1",
+    adherence: 54,
+    activeDays: 7,
+    prescriptionStatus: "alert",
+    flags: ["red-flag symptom alert", "dizziness"],
+    prescription: { activity: "Walking", minutes: 8, daysPerWeek: 3, intensity: "Easy", metHours: 1.4 },
+  },
+  {
+    id: "robert-evans",
+    name: "Robert Evans",
+    cancerType: "Prostate cancer",
+    treatmentStatus: "Before treatment",
+    phase: "Phase 1",
+    adherence: 0,
+    activeDays: 0,
+    prescriptionStatus: "pending-approval",
+    flags: ["pending prescription approval"],
+    prescription: { activity: "Strength", minutes: 12, daysPerWeek: 2, intensity: "Easy-to-moderate", metHours: 1.6 },
+  },
+];
+
+export const demoAlerts: DemoAlert[] = [
+  { id: "alert-aisha", patientId: "aisha-patel", severity: "critical", title: "Dizziness reported", detail: "Pause plan and route to care team.", status: "open" },
+  { id: "alert-maria", patientId: "maria-lopez", severity: "medium", title: "Low adherence", detail: "Fatigue barrier repeated twice this week.", status: "open" },
+  { id: "alert-robert", patientId: "robert-evans", severity: "low", title: "Prescription awaiting approval", detail: "Draft plan ready for clinician review.", status: "acknowledged" },
+];
+
+export const demoPrompts: DemoPrompt[] = [
+  { id: "artie-safety", name: "Artie safety triage", version: "v1.2", status: "Live" },
+  { id: "goal-setting", name: "Goal-setting session", version: "v1.4", status: "Live" },
+  { id: "doctor-summary", name: "Doctor summary", version: "v0.9", status: "Draft" },
+];
+
+export const demoTeamMembers: TeamMember[] = [
+  { id: "tm-maya", name: "Dr. Maya Chen", email: "maya.chen@gvoc.example", role: "Doctor", specialty: "GI oncology", status: "Active" },
+  { id: "tm-jordan", name: "Jordan Lee, RN", email: "jordan.lee@gvoc.example", role: "Care Team", specialty: "Survivorship", status: "Active" },
+  { id: "tm-priya", name: "Priya Shah", email: "priya@gvoc.example", role: "Site Admin", specialty: "Operations", status: "Active" },
+];
+
+export const demoProgramSessions: ProgramSession[] = Array.from({ length: 12 }, (_, index) => ({
+  id: `session-${index + 1}`,
+  number: index + 1,
+  title: [
+    "Meet Artie",
+    "Safety + hydration",
+    "Goal setting",
+    "Fatigue planning",
+    "Neuropathy-safe routes",
+    "Bathroom loop planning",
+    "Building consistency",
+    "Recovery setbacks",
+    "Strength basics",
+    "Progress reflection",
+    "Doctor visit prep",
+    "For-life plan",
+  ][index],
+  description: "Short Artie-guided curriculum session for recovery-focused movement.",
+  estimatedMinutes: index < 3 ? 8 : 10,
+  talkingPoints: "Safety, confidence, pacing, and practical barriers.",
+  active: index < 10,
+}));
+
+export const demoMetCatalog: MetCatalogItem[] = [
+  { id: "met-walk-easy", activity: "Walking easy", type: "Walking", intensity: "Easy", met: 2.5, active: true },
+  { id: "met-walk-mod", activity: "Walking moderate", type: "Walking", intensity: "Moderate", met: 3.5, active: true },
+  { id: "met-garden", activity: "Gardening light", type: "Gardening", intensity: "Easy", met: 2.3, active: true },
+  { id: "met-cycle", activity: "Cycling easy", type: "Cycling", intensity: "Easy", met: 4.0, active: true },
+  { id: "met-swim", activity: "Swimming easy", type: "Swimming", intensity: "Easy", met: 4.5, active: true },
+  { id: "met-stretch", activity: "Stretching", type: "Stretching", intensity: "Very easy", met: 2.0, active: true },
+  { id: "met-resist", activity: "Resistance light", type: "Resistance training", intensity: "Easy", met: 3.0, active: true },
+];
+
+export const demoPromptRegistry: PromptRegistryItem[] = [
+  { id: "prompt-artie", key: "artie_chat", agentType: "Artie chat", version: "v1.4", model: "demo-local", active: true, lastUpdated: "Jun 18, 2026" },
+  { id: "prompt-safety", key: "safety_triage", agentType: "Safety triage", version: "v1.2", model: "demo-local", active: true, lastUpdated: "Jun 20, 2026" },
+  { id: "prompt-rx", key: "rx_generation", agentType: "Prescription generation", version: "v0.8", model: "demo-local", active: false, lastUpdated: "Jun 12, 2026" },
+  { id: "prompt-summary", key: "doctor_summary", agentType: "Doctor summary", version: "v0.9", model: "demo-local", active: true, lastUpdated: "Jun 21, 2026" },
+  { id: "prompt-adherence", key: "adherence_reflection", agentType: "Adherence reflection", version: "v1.0", model: "demo-local", active: true, lastUpdated: "Jun 16, 2026" },
+];
+
+export const demoSiteRequests: SiteRequest[] = [
+  { id: "request-gvoc", siteName: "Green Valley Oncology Center", adminName: "Priya Shah", adminEmail: "priya@gvoc.example", cityState: "Austin, TX", status: "Pending review", inviteCode: "SAM-GVOC-7429" },
+  { id: "request-north", siteName: "North Ridge Oncology", adminName: "Elena Ruiz", adminEmail: "elena@northridge.example", cityState: "Denver, CO", status: "Approved", inviteCode: "NROC-2026" },
+  { id: "request-coastal", siteName: "Coastal Cancer Care", adminName: "Ben Ward", adminEmail: "ben@coastal.example", cityState: "Tampa, FL", status: "Rejected", inviteCode: "CCCC-2026", rejectionReason: "Incomplete site details" },
+];
+
+export const demoPlatformSites: PlatformSite[] = [
+  { id: "gvoc", name: "Green Valley Oncology Center", admin: "Priya Shah", patients: 5, doctors: 1, status: "Active", createdDate: "May 20, 2026" },
+  { id: "nroc", name: "North Ridge Oncology", admin: "Elena Ruiz", patients: 0, doctors: 2, status: "Pending", createdDate: "Jun 19, 2026" },
+  { id: "cccc", name: "Coastal Cancer Care", admin: "Ben Ward", patients: 12, doctors: 3, status: "Suspended", createdDate: "Apr 08, 2026" },
+];
+
+export const demoAuditEvents: AuditEvent[] = [
+  { id: "audit-1", timestamp: "Today 09:14", actor: "Dr. Maya Chen", action: "Marked alert reviewed", entity: "Aisha Patel", status: "Success", site: "Green Valley Oncology Center" },
+  { id: "audit-2", timestamp: "Today 08:42", actor: "Priya Shah", action: "Generated care code", entity: "SAM-GVOC-7429", status: "Success", site: "Green Valley Oncology Center" },
+  { id: "audit-3", timestamp: "Yesterday 16:20", actor: "Ravi Kumar", action: "Approved site request", entity: "North Ridge Oncology", status: "Success", site: "North Ridge Oncology" },
+  { id: "audit-4", timestamp: "Yesterday 10:05", actor: "Artie", action: "Safety escalation", entity: "Dizziness report", status: "Warning", site: "Green Valley Oncology Center" },
+];
+
+export const initialDemoState: DemoState = {
+  role: null,
+  userId: null,
+  selectedPatientId: "sam-rivera",
+  users: demoUsers,
+  site: demoSite,
+  patients: demoPatients,
+  alerts: demoAlerts,
+  prompts: demoPrompts,
+  teamMembers: demoTeamMembers,
+  programSessions: demoProgramSessions,
+  metCatalog: demoMetCatalog,
+  promptRegistry: demoPromptRegistry,
+  siteRequests: demoSiteRequests,
+  platformSites: demoPlatformSites,
+  auditEvents: demoAuditEvents,
+  onboarding: {
+    cancerType: "Colon cancer",
+    treatmentStatus: "Finished treatment",
+    treatments: ["Surgery", "Chemotherapy"],
+    previousActivity: "Some movement",
+    currentCapacity: "Walking to the mailbox wipes me out some days. I used to garden a lot and I miss it.",
+    weeklyWalkingMinutes: "30",
+    weeklyOtherActivityMinutes: "20",
+    baselineIntensity: "Mostly light",
+    averageDailySteps: "2800",
+    sixMinuteWalk: "",
+    useFirstWeekAsBaseline: true,
+    redFlags: [],
+    preferences: ["Walking", "Gardening"],
+    preferenceChips: ["Outdoors"],
+    barriers: ["Fatigue", "Neuropathy", "Bathroom access", "Fear of overdoing it"],
+    environment: {
+      "Sidewalks nearby": true,
+      "Safe walking area": true,
+      "Bathrooms on route": false,
+      "Gym/community center access": false,
+      "Indoor movement space": true,
+    },
+    environmentZipCode: "78704",
+    selectedTrailId: "lady-bird-lake",
+    supportPerson: null,
+    goalAnchor: "Rebuild stamina for gardening and errands.",
+    trackingType: "Manual",
+  },
+  patientProfile: {
+    name: "Sam Rivera",
+    email: "sam.rivera@example.com",
+    phone: "(512) 555-0198",
+    birthYear: 1974,
+    careTeam: "Green Valley Oncology Center",
+    careTeamCode: "GVOC",
+    careCodeLinked: true,
+    emailVerified: true,
+    inviteCodeType: "none",
+    inviteVerified: false,
+    prefilledFromClinic: false,
+    assignedDoctor: "Dr. Maya Chen",
+    siteId: "gvoc",
+    selfStarted: false,
+    onboardingStartMode: "self",
+    siteName: "Green Valley Oncology Center",
+  },
+  patientPlan: {
+    activity: "Walking",
+    minutes: 10,
+    daysPerWeek: 3,
+    intensity: "Easy-to-moderate",
+    metHours: 1.25,
+    adaptations: ["short sessions", "short loops near home", "flat steady routes", "starts below your limit", "gardening counts"],
+  },
+  connectedDevices: [
+    { id: "device-apple", name: "Apple Health", connected: false, lastSync: null },
+    { id: "device-google", name: "Google Fit", connected: false, lastSync: null },
+    { id: "device-garmin", name: "Garmin", connected: false, lastSync: null },
+    { id: "device-fitbit", name: "Fitbit", connected: false, lastSync: null },
+    { id: "device-manual", name: "Manual", connected: true, lastSync: "Today 8:10 AM" },
+  ],
+  activityLogs: [
+    {
+      id: "log-seed",
+      dateLabel: "This week",
+      activity: "Walking",
+      duration: 10,
+      paceFeel: "Easy",
+      symptoms: false,
+      metHours: 0.42,
+    },
+  ],
+  symptomReports: [],
+  chatMessages: [
+    {
+      id: "chat-seed",
+      sender: "artie",
+      text: "Hi Sam. Ask me anything about your plan, symptoms, or how to make movement fit today.",
+    },
+  ],
+  notifications: [
+    {
+      id: "notif-reminder",
+      type: "reminder",
+      title: "Walk prescription due today",
+      detail: "Your Week 1 plan is 10 minutes at an easy-to-moderate pace.",
+      createdAt: "Today 8:00 AM",
+      read: false,
+    },
+    {
+      id: "notif-session",
+      type: "session",
+      title: "Session 3 is ready",
+      detail: "Goal setting is unlocked now that sessions 1 and 2 are complete.",
+      createdAt: "Yesterday",
+      read: false,
+    },
+    {
+      id: "notif-celebration",
+      type: "celebration",
+      title: "Two sessions completed",
+      detail: "You are building a steady foundation for Phase 1.",
+      createdAt: "Mon",
+      read: true,
+    },
+  ],
+  doctorSummary: {
+    lastGeneratedAt: "Not generated yet",
+    copiedToMyChart: false,
+    shared: false,
+    reviewRequest: null,
+  },
+  onboardingMode: "none",
+  careCode: "",
+  generatedCareCode: null,
+  acceptedCareCodes: [],
+  patientIdentity: null,
+  completedOnboarding: false,
+  completedSessions: [1, 2],
+  sessionProgress: { "3": 0 },
+  safetyPaused: false,
+  toast: null,
+};

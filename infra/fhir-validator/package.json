@@ -1,0 +1,8 @@
+{
+  "name": "fhir-validator-wrapper",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Thin HTTP wrapper around validator_cli.jar for local FHIR R4 validation",
+  "main": "server.js",
+  "dependencies": {}
+}

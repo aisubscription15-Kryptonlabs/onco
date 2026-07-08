@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OncoMotionRx Screen Improvement Notes</title>
+    <style>
+      body { margin: 0; font-family: Inter, Arial, sans-serif; background: #F7F4ED; color: #1E2421; line-height: 1.6; }
+      main { max-width: 1040px; margin: 0 auto; padding: 40px 20px 72px; }
+      h1, h2 { font-family: "Bricolage Grotesque", Inter, Arial, sans-serif; line-height: 1.05; }
+      h1 { font-size: clamp(2rem, 5vw, 4rem); margin: 0 0 12px; }
+      h2 { margin-top: 32px; color: #2D5A4A; }
+      section { border: 1px solid #DCE7DD; border-radius: 24px; background: #fffaf0; padding: 22px; margin-top: 18px; }
+      ul { padding-left: 1.25rem; }
+      .kicker { color: #C66B3D; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+      .note { background: #DCE7DD; border-radius: 18px; padding: 14px 16px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="kicker">OncoMotionRx demo notes</p>
+      <h1>Screen Improvement Notes</h1>
+      <p class="note">The demo now uses a polished OncoMotionRx landing page, reusable role selector, privacy-aware patient onboarding entry, shared operations shell, and AI usage/reporting dashboards.</p>
+
+      <section>
+        <h2>Current application structure</h2>
+        <ul>
+          <li>Patient mobile routes live at /onboarding, /today, /prescription, /sessions, /progress, /artie, /guided-walk, /doctor-summary, /devices, /notifications, and /privacy-sharing.</li>
+          <li>Doctor routes remain under /doctor with roster, alerts, patient details, prescription review, and summaries.</li>
+          <li>Site admin routes remain under /admin and now use the shared Operations Console shell.</li>
+          <li>App-provider routes remain under /app-provider and now use the same Operations Console structure with platform-scoped navigation.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Landing and login changes made</h2>
+        <ul>
+          <li>/ is a two-column OncoMotionRx landing page with the hero message and embedded role selector.</li>
+          <li>/demo-role-select uses the reusable DemoRoleSelectPanel component.</li>
+          <li>Patient login routes users toward /onboarding unless they explicitly continue the existing demo patient.</li>
+          <li>Visible MedAssist login copy has been removed from the active demo screens.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Patient onboarding flow explanation</h2>
+        <ul>
+          <li>Start on my own captures email and optional name, marks the patient as self-started, and continues from treatment context.</li>
+          <li>Care Code SAM-GVOC-7429 shows masked invitation details, requires demo verification value 1974, then prefills Sam Rivera clinic details.</li>
+          <li>After verified invite confirmation, onboarding resumes at safety/preferences rather than repeating clinic-known treatment context.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Care Code privacy logic</h2>
+        <ul>
+          <li>The Care Code reveals only masked details before verification.</li>
+          <li>Only Care Code plus verification may prefill name, diagnosis, treatment status, treatments, and assigned doctor.</li>
+          <li>Backend phase should audit every code submission and verification attempt.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Admin/app-provider consolidation plan</h2>
+        <ul>
+          <li>OperationsShell and OperationsNav provide shared layout while preserving role-specific permissions.</li>
+          <li>Site Admin navigation is site-scoped: overview, team, patients, program config, MET catalog, symptom rules, prompts, analytics, AI usage, billing, and audit.</li>
+          <li>App Provider navigation is platform-scoped: overview, site requests, sites, platform analytics, global AI usage, prompt registry, audit logs, and billing operations.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>AI usage/reporting dashboard plan</h2>
+        <ul>
+          <li>/admin/ai-usage and /app-provider/ai-usage show AI calls, token estimates, cost estimates, cost per patient/site, and cost by agent.</li>
+          <li>Usage table includes filters for date range, site, agent, model, patient, and status.</li>
+          <li>Demo actions include view summary, export usage report, and mark reviewed.</li>
+          <li>Backend phase should derive these rows from immutable usage events and report-generation jobs.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Supabase backend tables needed next</h2>
+        <ul>
+          <li>profiles, sites, site_members, patient_profiles, patient_site_links, invite_codes, invite_verifications, onboarding_answers, prescriptions, activity_logs, symptom_reports, notifications, ai_usage_events, report_exports, audit_events, and billing_usage_rollups.</li>
+          <li>Role-level policies should separate patient, doctor, care-team, site admin, and app-provider permissions.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>iOS/Android/web readiness notes</h2>
+        <ul>
+          <li>Add PWA manifest, app icons, safe-area testing, offline states, push notification permissions, and native share/clipboard fallbacks.</li>
+          <li>Before React Native/Expo, isolate domain logic and replace browser-only APIs with adapters.</li>
+          <li>Plan HealthKit, Health Connect/Google Fit, Garmin, and Fitbit provider differences before implementation.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Remaining UI/UX improvements</h2>
+        <ul>
+          <li>Add richer empty/error/loading states once backend persistence begins.</li>
+          <li>Improve responsive data tables with mobile-friendly row cards.</li>
+          <li>Add clinician-facing source citations for Artie safety and prescription guidance.</li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>
