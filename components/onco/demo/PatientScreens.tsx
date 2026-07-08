@@ -37,7 +37,7 @@ const environmentKeys = ["Sidewalks nearby", "Safe walking area", "Bathrooms on 
 const trackingOptions: TrackingType[] = ["Apple Health", "Google Fit", "Garmin", "Fitbit", "Manual"];
 const baselineIntensityOptions = ["Mostly light", "Some moderate", "Hard exercise sometimes"] as const;
 const selfStartSteps = ["Start", "Identity", "Treatment", "Baseline", "Safety", "Preferences", "Barriers", "Environment", "Support", "Goal", "Tracking", "Plan"];
-const careCodeSteps = ["Baseline", "Preferences", "Barriers", "Goal + Tracking", "Plan"];
+const careCodeSteps = ["Baseline", "Preferences", "Barriers", "Environment", "Support", "Goal + Tracking", "Plan"];
 const trailSuggestions = [
   { id: "lady-bird-lake", zipCodes: ["78704", "78701", "78703"], name: "Lady Bird Lake Boardwalk", distance: "0.6 mi short loop", weather: "Mild morning shade", traffic: "Moderate foot traffic", stretch: "Flat paved waterside path", time: "12-15 min", note: "Benches nearby; good for easy pace." },
   { id: "zilker-loop", zipCodes: ["78704", "78746"], name: "Zilker Park Inner Loop", distance: "0.5 mi short loop", weather: "Open sun after noon", traffic: "Light on weekday mornings", stretch: "Flat grass and paved mix", time: "10-14 min", note: "Easy exit points and nearby restrooms." },
@@ -72,7 +72,7 @@ export function OnboardingStateMachine() {
   const [selfOpen, setSelfOpen] = useState(false);
   const [pendingDevice, setPendingDevice] = useState<TrackingType>("Apple Health");
   const isCareCodeFlow = state.onboardingMode === "care_code";
-  const total = isCareCodeFlow ? 5 : 9;
+  const total = isCareCodeFlow ? 7 : 9;
   const stepNames = isCareCodeFlow ? careCodeSteps : selfStartSteps;
   const stepOffset = !isCareCodeFlow && state.onboardingMode !== "none" && step > 0 ? 1 : 0;
   const currentStepNumber = isCareCodeFlow ? step : Math.min(stepNames.length, step + 1 + stepOffset);
@@ -145,10 +145,10 @@ export function OnboardingStateMachine() {
           {step === 1 && isCareCodeFlow ? <Baseline /> : null}
           {((step === 4 && !isCareCodeFlow) || (step === 2 && isCareCodeFlow)) ? <Preferences /> : null}
           {((step === 5 && !isCareCodeFlow) || (step === 3 && isCareCodeFlow)) ? <Barriers /> : null}
-          {step === 6 && !isCareCodeFlow ? <Environment /> : null}
-          {step === 7 && !isCareCodeFlow ? <Support onAdd={() => setSupportOpen(true)} /> : null}
-          {((step === 8 && !isCareCodeFlow) || (step === 4 && isCareCodeFlow)) ? <GoalTracking onWearable={(device) => { setPendingDevice(device); setWearableOpen(true); }} /> : null}
-          {((step === 9 && !isCareCodeFlow) || (step === 5 && isCareCodeFlow)) ? <ReadyToGenerate /> : null}
+          {((step === 6 && !isCareCodeFlow) || (step === 4 && isCareCodeFlow)) ? <Environment /> : null}
+          {((step === 7 && !isCareCodeFlow) || (step === 5 && isCareCodeFlow)) ? <Support onAdd={() => setSupportOpen(true)} /> : null}
+          {((step === 8 && !isCareCodeFlow) || (step === 6 && isCareCodeFlow)) ? <GoalTracking onWearable={(device) => { setPendingDevice(device); setWearableOpen(true); }} /> : null}
+          {((step === 9 && !isCareCodeFlow) || (step === 7 && isCareCodeFlow)) ? <ReadyToGenerate /> : null}
         </div>
 
         <div className="mt-6 space-y-3">

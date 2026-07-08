@@ -29,7 +29,7 @@
   body {
     @apply bg-[#f6f9fc] text-[#101828] antialiased;
     font-feature-settings: "cv11", "ss01";
-    letter-spacing: 0;
+    letter-spacing: -0.005em;
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
     -webkit-overflow-scrolling: touch;
