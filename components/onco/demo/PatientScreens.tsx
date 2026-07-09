@@ -32,22 +32,37 @@ const redFlags = [
 const treatments = ["Surgery", "Chemotherapy", "Radiation", "Immunotherapy", "Hormone therapy", "Targeted therapy"];
 const preferences = ["Walking", "Gardening", "Cycling", "Swimming", "Gym", "At home", "Stretching"];
 const preferenceChips = ["Outdoors", "With others", "Alone", "Morning", "Evening"];
-const barriers = ["Fatigue", "Neuropathy", "Nausea", "Bathroom access", "Low motivation", "Fear of overdoing it", "Weather", "No safe place to walk", "No time"];
-const environmentKeys = ["Sidewalks nearby", "Safe walking area", "Bathrooms on route", "Gym/community center access", "Indoor movement space"];
+const barriers = ["Fatigue", "Numb feet / neuropathy", "Nausea", "Need bathrooms nearby", "Low motivation", "Fear of overdoing it", "Feeling self-conscious", "No safe place to walk", "Weather", "No time"];
+const barrierAliases: Record<string, string[]> = {
+  "Numb feet / neuropathy": ["Neuropathy"],
+  "Need bathrooms nearby": ["Bathroom access"],
+};
+const environmentOptions = [
+  { key: "Sidewalks nearby", label: "Sidewalks or paths near home", icon: "path" },
+  { key: "Safe walking area", label: "I feel safe walking in my area", icon: "shield" },
+  { key: "Bathrooms on route", label: "Bathrooms along my usual routes", icon: "bathroom" },
+  { key: "Gym/community center access", label: "Access to a gym or community center", icon: "gym" },
+  { key: "Indoor movement space", label: "Space to move indoors at home", icon: "stairs" },
+] as const;
 const trackingOptions: TrackingType[] = ["Apple Health", "Google Fit", "Garmin", "Fitbit", "Manual"];
 const baselineIntensityOptions = ["Mostly light", "Some moderate", "Hard exercise sometimes"] as const;
 const selfStartSteps = ["Start", "Identity", "Treatment", "Baseline", "Safety", "Preferences", "Barriers", "Environment", "Support", "Goal", "Tracking", "Plan"];
-const careCodeSteps = ["Baseline", "Preferences", "Barriers", "Environment", "Support", "Goal + Tracking", "Plan"];
+const updateProfileSteps = ["Baseline", "Safety", "Preferences", "Barriers", "Environment", "Support", "Goal + Tracking", "Plan"];
+const careCodeSteps = updateProfileSteps;
 const trailSuggestions = [
-  { id: "lady-bird-lake", zipCodes: ["78704", "78701", "78703"], name: "Lady Bird Lake Boardwalk", distance: "0.6 mi short loop", weather: "Mild morning shade", traffic: "Moderate foot traffic", stretch: "Flat paved waterside path", time: "12-15 min", note: "Benches nearby; good for easy pace." },
-  { id: "zilker-loop", zipCodes: ["78704", "78746"], name: "Zilker Park Inner Loop", distance: "0.5 mi short loop", weather: "Open sun after noon", traffic: "Light on weekday mornings", stretch: "Flat grass and paved mix", time: "10-14 min", note: "Easy exit points and nearby restrooms." },
-  { id: "mueller-lake", zipCodes: ["78723", "78722"], name: "Mueller Lake Park Loop", distance: "0.7 mi loop", weather: "Breezy, partial shade", traffic: "Moderate near playground", stretch: "Flat paved loop", time: "14-18 min", note: "Good bathroom access and benches." },
-  { id: "neighborhood-flat", zipCodes: ["default"], name: "Nearby flat neighborhood loop", distance: "0.4 mi starter loop", weather: "Check conditions before leaving", traffic: "Usually low traffic", stretch: "Flat sidewalks preferred", time: "8-12 min", note: "Use this when a park route is not comfortable." },
+  { id: "lady-bird-boardwalk", zipCodes: ["78704", "78701", "78703"], area: "Austin, TX", name: "Lady Bird Lake Boardwalk", distance: "0.6 mi short loop", weather: "Best earlier in the day; mixed shade near the water", traffic: "Moderate foot and bike traffic", stretch: "Flat paved boardwalk and trail", time: "12-15 min", note: "Benches and easy turnaround points; keep right for bikes." },
+  { id: "zilker-inner-loop", zipCodes: ["78704", "78746"], area: "Austin, TX", name: "Zilker Park Inner Loop", distance: "0.5 mi short loop", weather: "More sun exposure after midday", traffic: "Lighter on weekday mornings", stretch: "Mostly flat grass and paved paths", time: "10-14 min", note: "Nearby restrooms and many exit points if fatigue starts." },
+  { id: "barton-springs", zipCodes: ["78704", "78746"], area: "Austin, TX", name: "Barton Springs Picnic Area Path", distance: "0.4 mi starter loop", weather: "Partial shade; can feel warm in afternoon", traffic: "Moderate near pool entrance", stretch: "Short paved and packed-surface path", time: "8-12 min", note: "Good choice when bathrooms and parking matter." },
+  { id: "mueller-lake", zipCodes: ["78723", "78722"], area: "Austin, TX", name: "Mueller Lake Park Loop", distance: "0.7 mi loop", weather: "Partial shade with breezy open sections", traffic: "Moderate near playground and market days", stretch: "Flat paved loop", time: "14-18 min", note: "Bathroom access, benches, and clear loop landmarks." },
+  { id: "shoal-creek", zipCodes: ["78705", "78756", "78757"], area: "Austin, TX", name: "Shoal Creek Trail Starter Walk", distance: "0.5 mi out-and-back", weather: "Good tree cover in many sections", traffic: "Light-to-moderate neighborhood use", stretch: "Mostly flat paved trail with a few uneven spots", time: "10-15 min", note: "Use the out-and-back format so turning around is easy." },
+  { id: "walnut-creek", zipCodes: ["78753", "78758"], area: "Austin, TX", name: "Walnut Creek Metro Park Paved Segment", distance: "0.6 mi out-and-back", weather: "Shade varies by segment", traffic: "Moderate on weekends", stretch: "Paved starter segment; avoid steeper side trails", time: "12-16 min", note: "Stay on paved sections for a flatter recovery walk." },
+  { id: "mckinney-falls", zipCodes: ["78744", "78747"], area: "Austin, TX", name: "McKinney Falls Picnic Area Walk", distance: "0.5 mi easy loop", weather: "Open sun in some areas; check heat before going", traffic: "Light-to-moderate depending on park hours", stretch: "Paved and packed-surface park path", time: "10-14 min", note: "Good for a short scenic walk when park access is available." },
+  { id: "neighborhood-flat", zipCodes: ["default"], area: "Your area", name: "Flat neighborhood starter loop", distance: "0.4 mi starter loop", weather: "Check weather before leaving", traffic: "Choose low-traffic streets or sidewalks", stretch: "Flat sidewalks or indoor route preferred", time: "8-12 min", note: "Use this when a nearby trail is not available or does not feel safe." },
 ];
 
 function trailsForZip(zipCode: string) {
-  const normalized = zipCode.trim();
-  const matches = trailSuggestions.filter((trail) => trail.zipCodes.includes(normalized));
+  const normalized = zipCode.trim().slice(0, 5);
+  const matches = normalized.length === 5 ? trailSuggestions.filter((trail) => trail.zipCodes.includes(normalized)) : [];
   return matches.length ? matches : trailSuggestions.filter((trail) => trail.zipCodes.includes("default"));
 }
 
@@ -69,15 +84,29 @@ export function OnboardingStateMachine() {
   const [supportOpen, setSupportOpen] = useState(false);
   const [wearableOpen, setWearableOpen] = useState(false);
   const [codeOpen, setCodeOpen] = useState(false);
+  const [codeInitialStage, setCodeInitialStage] = useState<"entry" | "forgot">("entry");
   const [selfOpen, setSelfOpen] = useState(false);
   const [pendingDevice, setPendingDevice] = useState<TrackingType>("Apple Health");
   const isCareCodeFlow = state.onboardingMode === "care_code";
-  const total = isCareCodeFlow ? 7 : 9;
+  const total = isCareCodeFlow ? 8 : 9;
   const stepNames = isCareCodeFlow ? careCodeSteps : selfStartSteps;
   const stepOffset = !isCareCodeFlow && state.onboardingMode !== "none" && step > 0 ? 1 : 0;
   const currentStepNumber = isCareCodeFlow ? step : Math.min(stepNames.length, step + 1 + stepOffset);
   const currentStepName = stepNames[currentStepNumber - 1] || "Start";
   const showLinkedPatientHeader = state.role === "patient" && state.patientProfile.careCodeLinked && state.patientProfile.inviteCodeType === "patient_invite";
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const requestedStep = searchParams.get("step");
+    if (!requestedStep) return;
+    if (requestedStep === "tracking") {
+      setStep(isCareCodeFlow ? 7 : 8);
+      return;
+    }
+    const numericStep = Number(requestedStep);
+    if (Number.isFinite(numericStep) && numericStep >= 0) {
+      setStep(Math.min(total, numericStep));
+    }
+  }, [isCareCodeFlow, total]);
   const goBack = () => {
     if (isCareCodeFlow && step <= 1) {
       setStep(0);
@@ -143,18 +172,28 @@ export function OnboardingStateMachine() {
           {step === 2 && !isCareCodeFlow ? <Baseline /> : null}
           {step === 3 && !isCareCodeFlow ? <Safety /> : null}
           {step === 1 && isCareCodeFlow ? <Baseline /> : null}
-          {((step === 4 && !isCareCodeFlow) || (step === 2 && isCareCodeFlow)) ? <Preferences /> : null}
-          {((step === 5 && !isCareCodeFlow) || (step === 3 && isCareCodeFlow)) ? <Barriers /> : null}
-          {((step === 6 && !isCareCodeFlow) || (step === 4 && isCareCodeFlow)) ? <Environment /> : null}
-          {((step === 7 && !isCareCodeFlow) || (step === 5 && isCareCodeFlow)) ? <Support onAdd={() => setSupportOpen(true)} /> : null}
-          {((step === 8 && !isCareCodeFlow) || (step === 6 && isCareCodeFlow)) ? <GoalTracking onWearable={(device) => { setPendingDevice(device); setWearableOpen(true); }} /> : null}
-          {((step === 9 && !isCareCodeFlow) || (step === 7 && isCareCodeFlow)) ? <ReadyToGenerate /> : null}
+          {step === 2 && isCareCodeFlow ? <Safety /> : null}
+          {((step === 4 && !isCareCodeFlow) || (step === 3 && isCareCodeFlow)) ? <Preferences /> : null}
+          {((step === 5 && !isCareCodeFlow) || (step === 4 && isCareCodeFlow)) ? <Barriers /> : null}
+          {((step === 6 && !isCareCodeFlow) || (step === 5 && isCareCodeFlow)) ? <Environment /> : null}
+          {((step === 7 && !isCareCodeFlow) || (step === 6 && isCareCodeFlow)) ? <Support onAdd={() => setSupportOpen(true)} /> : null}
+          {((step === 8 && !isCareCodeFlow) || (step === 7 && isCareCodeFlow)) ? <GoalTracking onWearable={(device) => { setPendingDevice(device); setWearableOpen(true); }} /> : null}
+          {((step === 9 && !isCareCodeFlow) || (step === 8 && isCareCodeFlow)) ? <ReadyToGenerate /> : null}
         </div>
 
         <div className="mt-6 space-y-3">
           {step === 0 ? (
             <>
-              <Button className="w-full" onClick={() => { demoStore.beginCareCode(); setCodeOpen(true); }}>I have a care code</Button>
+              <div>
+                <Button className="w-full" onClick={() => { demoStore.beginCareCode(); setCodeInitialStage("entry"); setCodeOpen(true); }}>I have a care code</Button>
+                <button
+                  className="mt-2 block w-full text-right text-xs font-semibold text-onco-muted hover:text-onco-sage"
+                  type="button"
+                  onClick={() => { demoStore.beginCareCode(); setCodeInitialStage("forgot"); setCodeOpen(true); }}
+                >
+                  Need help finding your code?
+                </button>
+              </div>
               <button className="w-full py-1 text-center text-xs font-semibold text-onco-muted-light" type="button" onClick={() => { demoStore.beginSelfStart(); setSelfOpen(true); }}>
                 Start on my own
               </button>
@@ -171,7 +210,7 @@ export function OnboardingStateMachine() {
       </div>
       <SupportModal open={supportOpen} onClose={() => setSupportOpen(false)} />
       <SelfStartModal open={selfOpen} onClose={() => setSelfOpen(false)} onSuccess={() => setStep(1)} />
-      <CareTeamCodeModal open={codeOpen} onClose={() => setCodeOpen(false)} onSuccess={(nextStep) => setStep(nextStep)} />
+      <CareTeamCodeModal initialStage={codeInitialStage} open={codeOpen} onClose={() => setCodeOpen(false)} onSuccess={(nextStep) => setStep(nextStep)} />
       <Modal open={wearableOpen} title={`Connect ${pendingDevice}`} onClose={() => setWearableOpen(false)}>
         <p className="text-sm leading-6 text-onco-muted">Review permission and connect activity tracking for this plan.</p>
         <Button className="mt-4 w-full" onClick={() => { demoStore.connectDevice(pendingDevice); setWearableOpen(false); }}>
@@ -280,6 +319,10 @@ function Baseline() {
 
 function Safety() {
   const { onboarding } = useDemoStore();
+  const selectedFlags = onboarding.redFlags;
+  const safetyMessage = selectedFlags.length
+    ? `You checked ${selectedFlags[0].toLowerCase()}. We'll pause plan setup and suggest checking with your care team first - we'll help you know what to ask.`
+    : "If none of these are happening today, Artie can keep building your plan gently.";
   return (
     <ScreenTitle title="Before we build your plan, a quick safety check" subtitle="Are you currently experiencing any of these? Be honest - this just helps us keep your plan safe.">
       <div className="space-y-2">
@@ -288,61 +331,121 @@ function Safety() {
         ))}
         <Choice checkbox selected={onboarding.redFlags.length === 0} onClick={() => demoStore.updateOnboarding({ redFlags: [] })}>None of these</Choice>
       </div>
-      {onboarding.redFlags.length > 0 ? <Card tone="sand" className="mt-4 text-sm">Safety pause will appear before your plan.</Card> : null}
-      {onboarding.redFlags.length > 0 ? <p className="mt-3 text-xs font-semibold text-onco-terracotta">Doctor review recommended before increasing activity.</p> : null}
+      <div className={cn("mt-4 rounded-2xl border p-4 text-sm leading-6", selectedFlags.length ? "border-onco-sage/20 bg-onco-sage-soft text-onco-sage" : "border-onco-sage/15 bg-onco-sage-soft text-onco-sage")}>
+        <p className="font-semibold">{selectedFlags.length ? "Safety note" : "Good to continue"}</p>
+        <p className="mt-1">{safetyMessage}</p>
+      </div>
     </ScreenTitle>
   );
 }
 
 function Preferences() {
   const { onboarding } = useDemoStore();
+  const preferenceMessage = preferenceSupportMessage(onboarding.preferences, onboarding.currentCapacity);
   return (
     <ScreenTitle title="What kind of movement sounds doable?" subtitle="Pick anything that appeals - even a little. We'll start with one.">
       <ChipGrid values={preferences} selected={onboarding.preferences} onToggle={(value) => toggleList(onboarding.preferences, value, (preferences) => demoStore.updateOnboarding({ preferences }))} />
-      <ChipGroup className="mt-4" label="Preference chips" values={preferenceChips} selected={onboarding.preferenceChips} onToggle={(value) => toggleList(onboarding.preferenceChips, value, (preferenceChips) => demoStore.updateOnboarding({ preferenceChips }))} />
+      <ChipGroup className="mt-4" label="How it should feel" values={preferenceChips} selected={onboarding.preferenceChips} onToggle={(value) => toggleList(onboarding.preferenceChips, value, (preferenceChips) => demoStore.updateOnboarding({ preferenceChips }))} />
+      {preferenceMessage ? (
+        <div className="mt-4 rounded-2xl border border-onco-sage/15 bg-onco-sage-soft p-4 text-sm leading-6 text-onco-sage">
+          {preferenceMessage}
+        </div>
+      ) : null}
     </ScreenTitle>
   );
 }
 
 function Barriers() {
   const { onboarding } = useDemoStore();
+  const selectedBarriers = normalizeBarriers(onboarding.barriers);
+  const barrierGroups = [
+    { label: "Body", values: ["Fatigue", "Numb feet / neuropathy", "Nausea", "Need bathrooms nearby"] },
+    { label: "Mind", values: ["Low motivation", "Fear of overdoing it", "Feeling self-conscious"] },
+    { label: "Life", values: ["No safe place to walk", "Weather", "No time"] },
+  ];
+  const barrierMessage = barrierSupportMessage(selectedBarriers);
   return (
     <ScreenTitle title="What's most likely to get in the way?" subtitle="These aren't excuses - they're planning information. Artie designs around them.">
-      <ChipGroup label="Barriers" values={barriers} selected={onboarding.barriers} onToggle={(value) => toggleList(onboarding.barriers, value, (barriers) => demoStore.updateOnboarding({ barriers }))} />
+      <div className="space-y-5">
+        {barrierGroups.map((group) => (
+          <ChipGroup
+            className="rounded-2xl"
+            dense={false}
+            key={group.label}
+            label={group.label}
+            values={group.values}
+            selected={selectedBarriers}
+            onToggle={(value) => demoStore.updateOnboarding({ barriers: toggleBarrier(onboarding.barriers, value) })}
+          />
+        ))}
+      </div>
+      {barrierMessage ? (
+        <div className="mt-5 rounded-2xl border border-onco-sage/15 bg-onco-sage-soft p-4 text-sm leading-6 text-onco-sage">
+          {barrierMessage}
+        </div>
+      ) : null}
     </ScreenTitle>
   );
 }
 
 function Environment() {
   const { onboarding } = useDemoStore();
+  const [trailSearchOpen, setTrailSearchOpen] = useState(false);
   const trails = trailsForZip(onboarding.environmentZipCode);
-  const selectedTrail = trails.find((trail) => trail.id === onboarding.selectedTrailId) || trails[0];
+  const visibleTrails = trails.slice(0, 2);
+  const selectedTrail = visibleTrails.find((trail) => trail.id === onboarding.selectedTrailId) || visibleTrails[0];
+  const hasZip = onboarding.environmentZipCode.trim().length === 5;
+  const hasExactZipRoutes = hasZip && visibleTrails.some((trail) => !trail.zipCodes.includes("default"));
   return (
     <ScreenTitle title="Where will movement happen?" subtitle="Quick yes or no - this helps Artie suggest routes and backups that actually work for you.">
       <div className="space-y-3">
-        {environmentKeys.map((key) => (
-          <label className="flex items-center justify-between rounded-2xl border border-onco-line bg-white p-4" key={key}>
-            <span className="text-sm font-semibold">{key}</span>
-            <input type="checkbox" checked={Boolean(onboarding.environment[key])} onChange={(event) => demoStore.updateOnboarding({ environment: { ...onboarding.environment, [key]: event.target.checked } })} />
-          </label>
+        {environmentOptions.map((option) => (
+          <EnvironmentToggleRow
+            checked={Boolean(onboarding.environment[option.key])}
+            icon={option.icon}
+            key={option.key}
+            label={option.label}
+            onChange={(checked) => demoStore.updateOnboarding({ environment: { ...onboarding.environment, [option.key]: checked } })}
+          />
         ))}
       </div>
-      <label className="mt-4 block">
-        <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-muted-light">Zip code for nearby trails</span>
+      <button
+        type="button"
+        className={cn("mt-4 flex w-full items-center justify-between rounded-2xl border border-onco-line bg-white px-4 py-3 text-left shadow-sm", trailSearchOpen && "border-onco-sage")}
+        onClick={() => setTrailSearchOpen((value) => !value)}
+      >
+        <span>
+          <span className="block text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-muted-light">Zip code for nearby trails</span>
+          <span className="mt-1 block text-sm font-semibold text-onco-ink">{trailSearchOpen ? "Enter ZIP and review routes" : "Tap to add ZIP code"}</span>
+        </span>
+        <span className="text-lg font-bold text-onco-sage">{trailSearchOpen ? "-" : "+"}</span>
+      </button>
+      {trailSearchOpen ? (
+        <>
+      <label className="mt-3 block">
         <input
           className="onco-input"
           inputMode="numeric"
           maxLength={5}
           value={onboarding.environmentZipCode}
           onChange={(event) => demoStore.updateOnboarding({ environmentZipCode: event.target.value.replace(/\D/g, "").slice(0, 5) })}
-          placeholder="Enter zip code"
+          placeholder="Enter 5-digit zip code"
         />
       </label>
+      {hasZip ? (
+        <>
       <Card className="mt-4">
-        <p className="font-semibold">Nearby short trail ideas</p>
-        <p className="mt-1 text-xs leading-5 text-onco-muted">Demo suggestions use the zip code to choose easy walking options.</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-semibold">Nearby short route ideas</p>
+            <p className="mt-1 text-xs leading-5 text-onco-muted">
+              {hasExactZipRoutes ? `Showing 2 short options near ${onboarding.environmentZipCode}.` : "No saved trail match yet, so here is a safe starter option."}
+            </p>
+          </div>
+          {hasExactZipRoutes ? <span className="rounded-full bg-onco-sage-soft px-2 py-1 text-[10px] font-bold text-onco-sage">{selectedTrail.area}</span> : null}
+        </div>
         <div className="mt-3 space-y-2">
-          {trails.map((trail) => (
+          {visibleTrails.map((trail) => (
             <button
               className={cn("w-full rounded-2xl border p-3 text-left", selectedTrail.id === trail.id ? "border-onco-sage bg-onco-sage-soft" : "border-onco-line bg-white")}
               key={trail.id}
@@ -354,18 +457,102 @@ function Environment() {
             </button>
           ))}
         </div>
+        <div className="mt-4 rounded-2xl bg-onco-sand/70 p-3">
+          <p className="font-semibold">{selectedTrail.name}</p>
+          <p className="mt-1 text-xs font-semibold text-onco-muted">{selectedTrail.area} - {selectedTrail.distance}</p>
+          <div className="mt-3 grid gap-1.5 text-xs leading-5 text-onco-muted">
+            <p><span className="font-semibold text-onco-ink">Weather fit:</span> {selectedTrail.weather}</p>
+            <p><span className="font-semibold text-onco-ink">Traffic:</span> {selectedTrail.traffic}</p>
+            <p><span className="font-semibold text-onco-ink">Stretch:</span> {selectedTrail.stretch}</p>
+            <p><span className="font-semibold text-onco-ink">Time:</span> {selectedTrail.time}</p>
+            <p>{selectedTrail.note}</p>
+          </div>
+        </div>
       </Card>
-      <Card tone="sand" className="mt-4">
+      <Card tone="sand" className="hidden">
         <p className="font-semibold">{selectedTrail.name}</p>
+        <p className="mt-1 text-xs font-semibold text-onco-muted">{selectedTrail.area} · {selectedTrail.distance}</p>
         <div className="mt-3 grid gap-2 text-xs leading-5 text-onco-muted">
-          <p><span className="font-semibold text-onco-ink">Weather:</span> {selectedTrail.weather}</p>
-          <p><span className="font-semibold text-onco-ink">Traffic:</span> {selectedTrail.traffic}</p>
+          <p><span className="font-semibold text-onco-ink">Weather fit:</span> {selectedTrail.weather}</p>
+          <p><span className="font-semibold text-onco-ink">Typical traffic:</span> {selectedTrail.traffic}</p>
           <p><span className="font-semibold text-onco-ink">Stretch:</span> {selectedTrail.stretch}</p>
           <p><span className="font-semibold text-onco-ink">Time:</span> {selectedTrail.time}</p>
           <p>{selectedTrail.note}</p>
         </div>
       </Card>
+        </>
+      ) : (
+        <p className="mt-2 text-xs leading-5 text-onco-muted">Enter 5 digits to see nearby short route ideas.</p>
+      )}
+        </>
+      ) : null}
     </ScreenTitle>
+  );
+}
+
+function EnvironmentToggleRow({ checked, icon, label, onChange }: { checked: boolean; icon: (typeof environmentOptions)[number]["icon"]; label: string; onChange: (checked: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "relative flex min-h-[58px] w-full items-center gap-3 rounded-2xl border border-onco-line bg-white px-4 py-3 text-left font-semibold shadow-sm transition",
+        checked && "border-onco-sage bg-onco-sage text-onco-cream",
+      )}
+      onClick={() => onChange(!checked)}
+    >
+      <EnvironmentOptionIcon name={icon} selected={checked} />
+      <span className="min-w-0 flex-1 pr-7 text-[13.5px] leading-4">{label}</span>
+      {checked ? (
+        <span className="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full border border-onco-cream/70 text-[10px]">
+          <CheckIcon />
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
+function EnvironmentOptionIcon({ name, selected }: { name: (typeof environmentOptions)[number]["icon"]; selected?: boolean }) {
+  return (
+    <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-xl", selected ? "bg-onco-cream/15 text-onco-cream" : "bg-onco-cream text-onco-sage")} aria-hidden="true">
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+        {name === "path" ? (
+          <>
+            <path d="M7 19c2-5 2-9 0-14" />
+            <path d="M17 19c-2-5-2-9 0-14" />
+            <path d="M10 8h4" />
+            <path d="M9 13h6" />
+          </>
+        ) : null}
+        {name === "shield" ? (
+          <>
+            <path d="M12 3 5 6v5c0 4.2 2.7 7.6 7 10 4.3-2.4 7-5.8 7-10V6l-7-3Z" />
+            <path d="m9 12 2 2 4-5" />
+          </>
+        ) : null}
+        {name === "bathroom" ? (
+          <>
+            <path d="M7 5h10v14H7z" />
+            <path d="M10 9h4" />
+            <path d="M10 13h4" />
+          </>
+        ) : null}
+        {name === "gym" ? (
+          <>
+            <path d="M4 10v4" />
+            <path d="M8 8v8" />
+            <path d="M16 8v8" />
+            <path d="M20 10v4" />
+            <path d="M8 12h8" />
+          </>
+        ) : null}
+        {name === "stairs" ? (
+          <>
+            <path d="M5 18h5v-4h4v-4h5" />
+            <path d="M5 22h14" />
+          </>
+        ) : null}
+      </svg>
+    </span>
   );
 }
 
@@ -483,7 +670,7 @@ export function PlanRevealClient() {
       {generatedCareCode ? (
         <Card tone="sand" className="mt-4">
           <p className="onco-display text-xl font-extrabold">Your care code</p>
-          <p className="mt-2 text-sm leading-6 text-onco-muted">Save this code. You can use it later to reconnect your plan or share it with your care team.</p>
+          <p className="mt-2 text-sm leading-6 text-onco-muted">Save this code somewhere easy to find. You can use it later to reconnect your plan or share it with your care team.</p>
           <p className="onco-display mt-4 text-3xl font-extrabold">{generatedCareCode}</p>
           <Button className="mt-4 w-full" variant="outline" onClick={() => { void navigator.clipboard?.writeText(generatedCareCode); demoStore.toast("Care Code copied"); }}>Copy code</Button>
         </Card>
@@ -920,6 +1107,9 @@ export function DoctorSummaryClient() {
   const summary = `OncoMotionRx summary for ${state.patientProfile.name || "Patient"}. Context: ${state.onboarding.cancerType}, ${state.onboarding.treatmentStatus}. Baseline: ${baselineText} Prescription: ${state.patientPlan.activity} ${state.patientPlan.minutes} min, ${state.patientPlan.daysPerWeek} days/week. Adherence: ${minutes} minutes, ${met.toFixed(2)} MET-hours. Symptoms: ${symptoms}. Safety flags: ${safetyFlags}. Barriers: ${state.onboarding.barriers.join(", ")}. Questions: activity restrictions, neuropathy fall risk, and stop symptoms.`;
   return (
     <PatientShell bottomNav={false} requireRole>
+      <Link className="mb-4 inline-flex text-sm font-semibold text-onco-muted" href="/onboarding">
+        {"<"} Back to start
+      </Link>
       <h1 className="onco-display text-[22px] font-extrabold">Doctor summary</h1>
       <Card className="mt-5 space-y-3">
         <Summary label="Symptoms" text={symptoms} />
@@ -930,7 +1120,7 @@ export function DoctorSummaryClient() {
         <Summary label="Phase I target" text={`Progress gradually toward +10 MET-hrs/week above the ${baselineMet || 0} MET-hrs/week baseline.`} />
       </Card>
       <Card className="mt-5 space-y-3"><Summary label="Context" text={`${state.onboarding.cancerType}, ${state.onboarding.treatmentStatus}. Goal: ${state.onboarding.goalAnchor}`} /><Summary label="Current prescription" text={`${state.patientPlan.activity} · ${state.patientPlan.daysPerWeek} days/wk · ${state.patientPlan.minutes} min · ${state.patientPlan.metHours} MET-hrs/wk.`} /><Summary label="Adherence" text={`${minutes} minutes logged · ${met.toFixed(2)} MET-hours earned.`} /><Summary label="Symptoms & barriers" text={state.onboarding.barriers.join(", ")} /><Summary label="Questions for doctor" text="Any activity restrictions? Is neuropathy affecting fall risk? Which symptoms should make me stop and call?" /></Card>
-      <div className="mt-4 grid gap-3"><Button onClick={() => { void navigator.clipboard?.writeText(summary); demoStore.toast("Copied for MyChart"); }}>Copy for MyChart</Button><Button variant="outline" onClick={() => demoStore.toast("PDF export prepared.", "info")}>PDF</Button><Button variant="outline" onClick={() => setShare(true)}>Email/share</Button></div>
+      <div className="mt-4 grid gap-3"><Button onClick={() => { void navigator.clipboard?.writeText(summary); demoStore.toast("Copied for MyChart"); }}>Copy for MyChart</Button><Button variant="outline" onClick={() => demoStore.toast("PDF export prepared.", "info")}>PDF</Button><Button variant="outline" onClick={() => setShare(true)}>Email/share</Button><Link className="onco-button-outline w-full" href="/onboarding">Back to start page</Link></div>
       <Modal open={share} title="Share summary" onClose={() => setShare(false)}><p className="text-sm text-onco-muted">Send this summary to your care team for plan review.</p><Button className="mt-4" onClick={() => { demoStore.sharePatientDetailsWithDoctor(); setShare(false); }}>Send to doctor for review</Button></Modal>
     </PatientShell>
   );
@@ -1018,12 +1208,16 @@ function SelfStartModal({ open, onClose, onSuccess }: { open: boolean; onClose: 
   );
 }
 
-function CareTeamCodeModal({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess: (nextStep: number) => void }) {
+function CareTeamCodeModal({ initialStage = "entry", open, onClose, onSuccess }: { initialStage?: "entry" | "forgot"; open: boolean; onClose: () => void; onSuccess: (nextStep: number) => void }) {
   const state = useDemoStore();
   const router = useRouter();
   const [code, setCode] = useState("");
   const [verify, setVerify] = useState("");
-  const [stage, setStage] = useState<"entry" | "invite" | "confirm" | "updateChoice">("entry");
+  const [stage, setStage] = useState<"entry" | "invite" | "confirm" | "updateChoice" | "forgot" | "otp" | "recovered">("entry");
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [recoveredCode, setRecoveredCode] = useState("");
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [error, setError] = useState("");
   const patientName = state.patientProfile.name || state.patientIdentity?.firstName || "Patient";
   const patientShortName = patientName
@@ -1039,6 +1233,17 @@ function CareTeamCodeModal({ open, onClose, onSuccess }: { open: boolean; onClos
   const assignedDoctor = state.patientProfile.assignedDoctor || "Dr. Maya Chen";
   const clinicName = state.patientProfile.siteName || state.patientProfile.careTeam || "Care team not assigned";
 
+  useEffect(() => {
+    if (!open) return;
+    setStage(initialStage);
+    setError("");
+    if (initialStage === "forgot") {
+      setRecoveryEmail("");
+      setOtp("");
+      setRecoveredCode("");
+    }
+  }, [initialStage, open]);
+
   function loginPatient() {
     const patientUser = state.users.find((user) => user.role === "patient");
     if (patientUser) demoStore.login("patient", patientUser.id);
@@ -1047,7 +1252,47 @@ function CareTeamCodeModal({ open, onClose, onSuccess }: { open: boolean; onClos
   function closeAndReset() {
     setStage("entry");
     setError("");
+    setOtp("");
+    setRecoveryBusy(false);
     onClose();
+  }
+
+  async function sendRecoveryOtp() {
+    setRecoveryBusy(true);
+    setError("");
+    try {
+      const foundCode = demoStore.findCareCodeByEmail(recoveryEmail);
+      if (!foundCode) {
+        setError("No care code found for this email in the patient records.");
+        return;
+      }
+      setRecoveredCode(foundCode);
+      setOtp("");
+      demoStore.toast("Verification code sent.", "info");
+      setStage("otp");
+    } finally {
+      setRecoveryBusy(false);
+    }
+  }
+
+  async function verifyRecoveryOtp() {
+    setRecoveryBusy(true);
+    setError("");
+    try {
+      if (otp !== "1234") {
+        setError("OTP did not match. Please check the code and try again.");
+        return;
+      }
+      const newCode = demoStore.rotateCareCodeByEmail(recoveryEmail);
+      if (!newCode) {
+        setError("Could not generate a new care code for this email.");
+        return;
+      }
+      setRecoveredCode(newCode);
+      setStage("recovered");
+    } finally {
+      setRecoveryBusy(false);
+    }
   }
 
   return (
@@ -1066,6 +1311,81 @@ function CareTeamCodeModal({ open, onClose, onSuccess }: { open: boolean; onClos
             setError("We could not find that care code. Please check the code from your care team.");
           }}>
             Continue
+          </Button>
+          <button
+            className="mt-3 min-h-11 w-full text-sm font-semibold text-onco-muted hover:text-onco-sage"
+            type="button"
+            onClick={() => {
+              setError("");
+              setRecoveryEmail("");
+              setOtp("");
+              setRecoveredCode("");
+              setStage("forgot");
+            }}
+          >
+            Forgot or lost your care code?
+          </button>
+        </>
+      ) : null}
+      {stage === "forgot" ? (
+        <>
+          <Card>
+            <p className="onco-display text-xl font-extrabold">Forgot or lost your care code?</p>
+            <p className="mt-3 text-sm leading-6 text-onco-muted">
+              Enter the email used during signup. We'll verify it and generate a new linked care code.
+            </p>
+          </Card>
+          <label className="mt-4 block">
+            <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-muted-light">Email</span>
+            <input className="onco-input" value={recoveryEmail} onChange={(event) => { setRecoveryEmail(event.target.value); setError(""); }} placeholder="name@example.com" />
+          </label>
+          {error ? <p className="mt-2 text-xs font-semibold text-onco-terracotta">{error}</p> : null}
+          <Button className="mt-4 w-full" disabled={recoveryBusy} onClick={() => { void sendRecoveryOtp(); }}>
+            {recoveryBusy ? "Sending..." : "Send OTP"}
+          </Button>
+          <button className="mt-3 min-h-11 w-full text-sm font-semibold text-onco-muted hover:text-onco-sage" type="button" onClick={() => { setError(""); setStage("entry"); }}>
+            Back to care code
+          </button>
+        </>
+      ) : null}
+      {stage === "otp" ? (
+        <>
+          <Card tone="sand">
+            <p className="font-semibold">Verification code</p>
+            <p className="mt-2 text-sm leading-6 text-onco-muted">Enter the verification code for {recoveryEmail}.</p>
+          </Card>
+          <label className="mt-4 block">
+            <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-muted-light">Enter OTP</span>
+            <input className="onco-input" inputMode="numeric" value={otp} onChange={(event) => { setOtp(event.target.value.replace(/\D/g, "").slice(0, 4)); setError(""); }} placeholder="Enter code" />
+          </label>
+          {error ? <p className="mt-2 text-xs font-semibold text-onco-terracotta">{error}</p> : null}
+          <Button className="mt-4 w-full" disabled={recoveryBusy} onClick={() => { void verifyRecoveryOtp(); }}>
+            {recoveryBusy ? "Verifying..." : "Verify OTP"}
+          </Button>
+          <button className="mt-3 min-h-11 w-full text-sm font-semibold text-onco-muted hover:text-onco-sage" type="button" onClick={() => { void sendRecoveryOtp(); }}>
+            Resend OTP
+          </button>
+        </>
+      ) : null}
+      {stage === "recovered" ? (
+        <>
+          <Card>
+            <p className="onco-display text-xl font-extrabold">New care code generated</p>
+            <p className="mt-3 text-sm leading-6 text-onco-muted">Save this new code before continuing. Your previous code is replaced in this demo.</p>
+            <p className="onco-display mt-4 text-3xl font-extrabold text-onco-ink">{recoveredCode}</p>
+          </Card>
+          <Button className="mt-4 w-full" onClick={() => {
+            setCode(recoveredCode);
+            if (demoStore.submitCareCode(recoveredCode)) {
+              setStage("invite");
+              return;
+            }
+            setStage("entry");
+          }}>
+            Continue with this code
+          </Button>
+          <Button className="mt-3 w-full" variant="outline" onClick={() => { void navigator.clipboard?.writeText(recoveredCode); demoStore.toast("Care Code copied"); }}>
+            Copy code
           </Button>
         </>
       ) : null}
@@ -1127,7 +1447,7 @@ function CareTeamCodeModal({ open, onClose, onSuccess }: { open: boolean; onClos
           <Card>
             <p className="onco-display text-xl font-extrabold">Update your profile?</p>
             <p className="mt-3 text-sm leading-6 text-onco-muted">
-              You can update movement preferences, barriers, goals, and tracking before opening your care plan.
+              We'll show the same movement onboarding screens so your plan can refresh around today's answers.
             </p>
           </Card>
           <Button className="mt-4 w-full" onClick={() => {
@@ -1176,6 +1496,7 @@ export function DevicesClient() {
 }
 
 function DeviceConnectivityContent({ state }: { state: ReturnType<typeof useDemoStore> }) {
+  const router = useRouter();
   const [selectedDevice, setSelectedDevice] = useState<ConnectedDevice | null>(null);
   const [autoSync, setAutoSync] = useState(true);
   const [shareDose, setShareDose] = useState(true);
@@ -1186,11 +1507,19 @@ function DeviceConnectivityContent({ state }: { state: ReturnType<typeof useDemo
   function connectAndClose(device: ConnectedDevice) {
     demoStore.connectDevice(device.name);
     setSelectedDevice(null);
+    router.push("/onboarding?step=tracking");
   }
 
   function syncAndClose(device: ConnectedDevice) {
     demoStore.syncDevice(device.name);
     setSelectedDevice(null);
+    router.push("/onboarding?step=tracking");
+  }
+
+  function useManualAndReturn() {
+    demoStore.connectDevice("Manual");
+    setSelectedDevice(null);
+    router.push("/onboarding?step=tracking");
   }
 
   return (
@@ -1256,7 +1585,7 @@ function DeviceConnectivityContent({ state }: { state: ReturnType<typeof useDemo
             <div className="mt-4 grid gap-2">
               <Button className="w-full" onClick={() => connectAndClose(selectedDevice)}>Allow and connect</Button>
               <Button className="w-full" variant="outline" onClick={() => syncAndClose(selectedDevice)}>Connect and sync sample</Button>
-              <Button className="w-full" variant="outline" onClick={() => { demoStore.connectDevice("Manual"); setSelectedDevice(null); }}>Use manual tracking</Button>
+              <Button className="w-full" variant="outline" onClick={useManualAndReturn}>Use manual tracking</Button>
             </div>
           </>
         ) : null}
@@ -1310,10 +1639,18 @@ export function PrivacySharingClient() {
 
 function ToggleRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
   return (
-    <label className="flex items-center justify-between gap-3">
+    <button className="flex w-full items-center justify-between gap-3 text-left" type="button" onClick={() => onChange(!checked)}>
       <span className="text-sm font-semibold">{label}</span>
-      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
-    </label>
+      <span
+        className={cn(
+          "grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 transition",
+          checked ? "border-onco-sage bg-onco-sage text-onco-cream" : "border-[#C9CFC8] bg-white text-transparent",
+        )}
+        aria-hidden="true"
+      >
+        <CheckIcon className="text-xs" />
+      </span>
+    </button>
   );
 }
 
@@ -1329,16 +1666,88 @@ function ScreenTitle({ title, subtitle, children }: { title: string; subtitle: s
   return <div><h1 className="onco-display text-[28px] font-extrabold leading-[1.08] tracking-normal text-onco-ink">{title}</h1><p className="mb-6 mt-3 text-[14.5px] leading-6 text-onco-muted">{subtitle}</p>{children}</div>;
 }
 
-function ChipGroup({ label, values, selected, onToggle, className }: { label: string; values: string[]; selected: string[]; onToggle: (value: string) => void; className?: string }) {
-  return <div className={className}><p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-muted-light">{label}</p><div className="flex flex-wrap gap-2">{values.map((value) => <Pill key={value} active={selected.includes(value)} onClick={() => onToggle(value)}>{value}</Pill>)}</div></div>;
+function ChipGroup({ label, values, selected, onToggle, className, dense = true }: { label: string; values: string[]; selected: string[]; onToggle: (value: string) => void; className?: string; dense?: boolean }) {
+  return (
+    <div className={className}>
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-muted-light">{label}</p>
+      <div className={cn("flex flex-wrap", dense ? "gap-2" : "gap-2.5")}>
+        {values.map((value) => {
+          const isSelected = selected.includes(value);
+          return (
+            <button
+              type="button"
+              key={value}
+              className={cn(
+                "inline-flex max-w-full items-center gap-2 rounded-full border border-onco-line bg-white text-left font-semibold leading-5 text-[#3A403C] shadow-sm transition",
+                dense ? "min-h-10 px-3.5 py-2 text-[13px]" : "min-h-11 px-4 py-2.5 text-[13.5px]",
+                isSelected && "border-onco-sage bg-onco-sage text-onco-cream",
+              )}
+              onClick={() => onToggle(value)}
+            >
+              {isSelected ? (
+                <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full border border-current text-[9px]">
+                  <CheckIcon />
+                </span>
+              ) : null}
+              <span className="min-w-0 whitespace-normal">{value}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function ChipGrid({ values, selected, onToggle }: { values: string[]; selected: string[]; onToggle: (value: string) => void }) {
-  return <div className="grid grid-cols-2 gap-3">{values.map((value) => <button type="button" key={value} className={cn("rounded-2xl border border-onco-line bg-white p-4 text-left text-sm font-semibold", selected.includes(value) && "border-onco-sage bg-onco-sage text-onco-cream")} onClick={() => onToggle(value)}><WalkIcon className="mb-2 text-2xl" />{value}</button>)}</div>;
+  return (
+    <div className="space-y-3">
+      {values.map((value) => {
+        const isSelected = selected.includes(value);
+        return (
+          <button
+            type="button"
+            key={value}
+            className={cn(
+              "relative flex min-h-[58px] w-full items-center gap-3 rounded-2xl border border-onco-line bg-white px-4 py-3 text-left text-sm font-semibold text-onco-ink transition",
+              isSelected && "border-onco-sage bg-onco-sage text-onco-cream",
+            )}
+            onClick={() => onToggle(value)}
+          >
+            <WalkIcon className="shrink-0 text-xl" />
+            <span className="min-w-0 flex-1 pr-7">{value}</span>
+            {isSelected ? (
+              <span className="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full border border-onco-cream/70 text-[10px]">
+                <CheckIcon />
+              </span>
+            ) : null}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 function Choice({ children, selected, checkbox, onClick }: { children: React.ReactNode; selected: boolean; checkbox?: boolean; onClick: () => void }) {
-  return <button type="button" className={cn("flex w-full items-center gap-3 rounded-[15px] border border-onco-line bg-white px-4 py-3 text-left text-[13.5px] font-medium", selected && "border-[1.5px] border-onco-sage")} onClick={onClick}><span className={cn("flex h-5 w-5 shrink-0 items-center justify-center border-2 border-[#C9CFC8]", checkbox ? "rounded-md" : "rounded-full", selected && "border-onco-sage bg-onco-sage")}>{selected ? checkbox ? <CheckIcon className="text-xs text-onco-cream" /> : <span className="h-1.5 w-1.5 rounded-full bg-onco-cream" /> : null}</span>{children}</button>;
+  return (
+    <button
+      type="button"
+      className={cn(
+        "relative flex min-h-[54px] w-full items-center gap-3 rounded-2xl border border-onco-line bg-white px-4 py-3 text-left text-[13.5px] font-semibold text-onco-ink transition",
+        selected && "border-onco-sage bg-onco-sage text-onco-cream",
+      )}
+      onClick={onClick}
+    >
+      <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center border-2", checkbox ? "rounded-md" : "rounded-full", selected ? "border-onco-cream bg-onco-sage" : "border-[#C9CFC8] bg-white")}>
+        {selected ? checkbox ? <CheckIcon className="text-xs text-onco-cream" /> : <span className="h-1.5 w-1.5 rounded-full bg-onco-cream" /> : null}
+      </span>
+      <span className="min-w-0 flex-1 pr-7">{children}</span>
+      {selected ? (
+        <span className="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full border border-onco-cream/70 text-[10px]">
+          <CheckIcon />
+        </span>
+      ) : null}
+    </button>
+  );
 }
 
 function AiBadge({ light = false }: { light?: boolean }) {
@@ -1430,6 +1839,52 @@ function Summary({ label, text }: { label: string; text: string }) {
 
 function toggleList(values: string[], value: string, update: (next: string[]) => void) {
   update(values.includes(value) ? values.filter((item) => item !== value) : [...values, value]);
+}
+
+function normalizeBarriers(selected: string[]) {
+  return selected.map((item) => {
+    const canonical = Object.entries(barrierAliases).find(([, aliases]) => aliases.includes(item))?.[0];
+    return canonical || item;
+  });
+}
+
+function toggleBarrier(values: string[], value: string) {
+  const aliases = barrierAliases[value] || [];
+  const hasValue = values.includes(value) || aliases.some((alias) => values.includes(alias));
+  return hasValue
+    ? values.filter((item) => item !== value && !aliases.includes(item))
+    : [...values.filter((item) => !aliases.includes(item)), value];
+}
+
+function preferenceSupportMessage(selected: string[], currentCapacity: string) {
+  if (selected.length === 0) return "";
+  if (selected.includes("Gardening") || /garden/i.test(currentCapacity)) {
+    return "You mentioned missing your garden. Gardening absolutely counts - we can build it into your plan.";
+  }
+  if (selected.includes("Walking")) return "Walking is a strong starting point. Artie can keep it short, flat, and easy to adjust.";
+  if (selected.includes("Cycling")) return "Cycling can work well when impact is a concern. Artie can start with gentle, short sessions.";
+  if (selected.includes("Swimming")) return "Swimming can be a low-impact option when your care team says it is safe for treatment and skin healing.";
+  if (selected.includes("Gym")) return "Gym movement can be simple and controlled. Artie can keep the routine light and recovery-focused.";
+  if (selected.includes("At home")) return "At-home movement is a practical backup. Artie can design short sessions that do not depend on travel.";
+  if (selected.includes("Stretching")) return "Stretching is a good gentle option. Artie can use it for easy days and warmups.";
+  return `${selected[0]} can be part of your plan. Artie will start small and adjust around your energy.`;
+}
+
+function barrierSupportMessage(selected: string[]) {
+  if (selected.length === 0) return "";
+  if (selected.includes("Fear of overdoing it")) {
+    return "Fear of overdoing it is common. Artie will start smaller than you think and build up only when it feels safe.";
+  }
+  if (selected.includes("Fatigue")) return "Fatigue matters. Artie can use shorter sessions and more recovery space.";
+  if (selected.includes("Numb feet / neuropathy")) return "Numb feet or neuropathy changes the plan. Artie can prefer flat, steady routes and lower fall-risk options.";
+  if (selected.includes("Need bathrooms nearby")) return "Bathroom access can shape the route. Artie can suggest short loops with easier stops.";
+  if (selected.includes("Nausea")) return "Nausea can make movement harder. Artie can keep sessions gentle and easy to pause.";
+  if (selected.includes("Low motivation")) return "Low motivation is planning information. Artie can make the first step small enough to start.";
+  if (selected.includes("Feeling self-conscious")) return "Feeling self-conscious is understandable. Artie can suggest private or at-home movement options.";
+  if (selected.includes("No safe place to walk")) return "Safety comes first. Artie can look for indoor options or safer short routes.";
+  if (selected.includes("Weather")) return "Weather can change the plan. Artie can keep indoor backups ready.";
+  if (selected.includes("No time")) return "No time means the plan should be smaller. Artie can use short sessions that fit into the day.";
+  return "Artie will design around these barriers so the plan feels realistic, not forced.";
 }
 
 function artieResponse(text: string) {

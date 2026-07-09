@@ -396,6 +396,53 @@ export const demoStore = {
       },
     }));
   },
+  findCareCodeByEmail(email: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !normalizedEmail.includes("@")) return null;
+    if (normalizedEmail === "sam.rivera@example.com" || normalizedEmail === "s***@example.com") {
+      return "SAM-GVOC-7429";
+    }
+    const match = state.acceptedCareCodes.find((item) => {
+      const profileEmail = item.patientProfile.email?.trim().toLowerCase();
+      const identityEmail = item.patientIdentity?.contact?.trim().toLowerCase();
+      return profileEmail === normalizedEmail || identityEmail === normalizedEmail;
+    });
+    return match?.code || null;
+  },
+  rotateCareCodeByEmail(email: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !normalizedEmail.includes("@")) return null;
+    const match = state.acceptedCareCodes.find((item) => {
+      const profileEmail = item.patientProfile.email?.trim().toLowerCase();
+      const identityEmail = item.patientIdentity?.contact?.trim().toLowerCase();
+      return profileEmail === normalizedEmail || identityEmail === normalizedEmail;
+    });
+    if (!match) return null;
+
+    const first = (match.patientIdentity?.firstName || match.patientProfile.name || "Patient").trim().split(/\s+/)[0] || "Patient";
+    const prefix = first.slice(0, 3).toUpperCase().replace(/[^A-Z]/g, "") || "OMR";
+    const clinicCode = (match.patientProfile.siteId || state.site.id || "GVOC").toUpperCase().replace(/[^A-Z0-9]/g, "") || "GVOC";
+    let nextCode = "";
+    do {
+      const digits = String(Math.floor(1000 + Math.random() * 9000));
+      nextCode = `${prefix}-${clinicCode}-${digits}`;
+    } while (state.acceptedCareCodes.some((item) => item.code === nextCode));
+
+    const rotated = {
+      ...match,
+      code: nextCode,
+      createdAt: nowLabel(),
+    };
+    setState((current) => ({
+      ...current,
+      acceptedCareCodes: [
+        rotated,
+        ...current.acceptedCareCodes.filter((item) => item.code !== match.code),
+      ],
+      toast: { id: Date.now(), message: "New care code generated", tone: "success" },
+    }));
+    return nextCode;
+  },
   submitCareCode(code: string) {
     const normalized = code
       .trim()
@@ -760,8 +807,8 @@ export const demoStore = {
     const answers = state.onboarding;
     const adaptations: string[] = [];
     if (answers.barriers.includes("Fatigue")) adaptations.push("short sessions");
-    if (answers.barriers.includes("Bathroom access")) adaptations.push("short loops near home");
-    if (answers.barriers.includes("Neuropathy")) adaptations.push("flat steady routes");
+    if (answers.barriers.includes("Bathroom access") || answers.barriers.includes("Need bathrooms nearby")) adaptations.push("short loops near home");
+    if (answers.barriers.includes("Neuropathy") || answers.barriers.includes("Numb feet / neuropathy")) adaptations.push("flat steady routes");
     if (answers.barriers.includes("Fear of overdoing it")) adaptations.push("starts below your limit");
     if (answers.preferences.includes("Gardening")) adaptations.push("gardening counts");
     if (estimateBaselineMetHours(answers) > 0) adaptations.push("baseline measured");
