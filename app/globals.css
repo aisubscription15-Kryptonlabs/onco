@@ -200,6 +200,52 @@
     @apply text-onco-cream;
   }
 
+  .artie-eye {
+    animation: artie-blink 4.2s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .artie-blink-lid {
+    position: absolute;
+    top: 45.5%;
+    z-index: 1;
+    width: 10.5%;
+    height: 11%;
+    border-radius: 9999px;
+    background: #f7fbfd;
+    box-shadow: inset 0 -1px 2px rgba(78, 140, 180, 0.16);
+    transform: scaleY(0);
+    transform-origin: center;
+    animation: artie-image-blink 4.2s ease-in-out infinite;
+  }
+
+  @keyframes artie-blink {
+    0%,
+    88%,
+    94%,
+    100% {
+      transform: scaleY(1);
+    }
+    90%,
+    92% {
+      transform: scaleY(0.08);
+    }
+  }
+
+  @keyframes artie-image-blink {
+    0%,
+    88%,
+    94%,
+    100% {
+      transform: scaleY(0);
+    }
+    90%,
+    92% {
+      transform: scaleY(1);
+    }
+  }
+
   /* ---- Surfaces ---- */
   .card {
     @apply rounded-[20px] border bg-white transition-all duration-200;

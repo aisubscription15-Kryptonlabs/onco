@@ -478,7 +478,7 @@ function Environment() {
             </button>
           ))}
         </div>
-        <div className="mt-4 rounded-[14px] bg-onco-sand/70 p-3">
+        <div className="mt-4 rounded-[14px] border border-onco-sage/15 bg-onco-sage-soft p-3">
           <p className="font-semibold">{selectedTrail.name}</p>
           <p className="mt-1 text-xs font-semibold text-onco-muted">{selectedTrail.area} - {selectedTrail.distance}</p>
           <div className="mt-3 grid gap-1.5 text-xs leading-5 text-onco-muted">
@@ -580,9 +580,12 @@ function Support({ onAdd }: { onAdd: () => void }) {
   return (
     <ScreenTitle title="Who's in your corner?" subtitle="People who move with support tend to stick with it. Totally optional - going solo is fine too.">
       {onboarding.supportPerson ? (
-        <Card>
+        <Card className="relative min-h-[54px] rounded-[14px] border-onco-sage bg-onco-sage px-4 py-3 pr-12 text-onco-cream">
           <p className="font-semibold">{onboarding.supportPerson.name}</p>
-          <p className="text-sm text-onco-muted">{onboarding.supportPerson.relationship} · Invite sent · pending</p>
+          <p className="text-sm text-onco-cream/80">{onboarding.supportPerson.relationship} · Invite sent · pending</p>
+          <span className="absolute right-3 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full border border-onco-cream/70 text-[10px] text-onco-cream">
+            <CheckIcon />
+          </span>
         </Card>
       ) : <Card tone="sand">No support person yet.</Card>}
       <Button className="mt-4 w-full" variant="outline" onClick={onAdd}>Add support person</Button>
@@ -1576,7 +1579,7 @@ function CareTeamCodeModal({ initialStage = "entry", open, onClose, onSuccess }:
       ) : null}
       {stage === "confirm" ? (
         <>
-          <Card>
+          <Card tone="sand">
             <p className="onco-display text-xl font-extrabold">Confirm your clinic profile</p>
             <div className="mt-3 space-y-1 text-sm text-onco-muted">
               <p>{patientName}</p>
@@ -1599,7 +1602,7 @@ function CareTeamCodeModal({ initialStage = "entry", open, onClose, onSuccess }:
       ) : null}
       {stage === "updateChoice" ? (
         <>
-          <Card>
+          <Card tone="sand">
             <p className="onco-display text-xl font-extrabold">Update your profile?</p>
             <p className="mt-3 text-sm leading-6 text-onco-muted">
               We'll show the same movement onboarding screens so your plan can refresh around today's answers.
@@ -1884,43 +1887,43 @@ function ChipGrid({ values, selected, onToggle }: { values: string[]; selected: 
 
 function MovementOptionIcon({ label, selected }: { label: string; selected: boolean }) {
   const commonProps = {
-    className: "h-6 w-6",
+    className: "h-8 w-8",
     fill: "none",
     stroke: "currentColor",
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
-    strokeWidth: 1.9,
-    viewBox: "0 0 24 24",
+    strokeWidth: 2,
+    viewBox: "0 0 56 56",
   };
 
   return (
     <span
       aria-hidden="true"
       className={cn(
-        "onco-option-icon",
+        "grid h-8 w-8 shrink-0 place-items-center text-onco-sage",
         selected && "text-onco-cream",
       )}
     >
       {label === "Walking" ? (
-        <svg {...commonProps}><circle cx="12" cy="4" r="1.6" /><path d="m11 7-2 5 3 2 2 6" /><path d="m9 12-3 5" /><path d="m13 8 3 3 2.5.5" /></svg>
+        <svg {...commonProps}><circle cx="27.5" cy="13" r="3.2" fill="currentColor" stroke="none" /><path d="M27 18L23.5 26L28.5 31" /><path d="M24.2 25.2L18.5 31" /><path d="M28.5 31L35.5 39" /><path d="M26.4 31L20 40" /><path d="M26.2 20.5L34 24.5" /></svg>
       ) : null}
       {label === "Gardening" ? (
-        <svg {...commonProps}><path d="M12 14V6" /><path d="M12 9C8.5 6.5 5.5 8 5.5 8s2 4 6.5 3.2" /><path d="M12 8c3.5-3.2 7-1.4 7-1.4S17.1 11 12 9.8" /><path d="M6.5 14h11l-1.2 6H7.7l-1.2-6Z" /><path d="M5.5 20h13" /></svg>
+        <svg {...commonProps}><path d="M18 30H38V37C38 39 36 41 34 41H22C20 41 18 39 18 37V30Z" /><path d="M28 30V18" /><path d="M27.5 24C23 24 20 21 19 18C23 17 26 18.5 28 22" /><path d="M28.5 24C33 24 36 21 37 18C33 17 30 18.5 28 22" /></svg>
       ) : null}
       {label === "Cycling" ? (
-        <svg {...commonProps}><circle cx="6" cy="17" r="3" /><circle cx="18" cy="17" r="3" /><path d="M6 17h5l3-6h-4l-4 6Z" /><path d="m11 17-3-8" /><path d="m14 11 4 6" /><path d="M9 7h4" /></svg>
+        <svg {...commonProps}><circle cx="18" cy="37" r="6" /><circle cx="38" cy="37" r="6" /><circle cx="28" cy="17" r="3.2" fill="currentColor" stroke="none" /><path d="M18 37L25 25L34 37H24L30 26H36M28 21L30 26" /></svg>
       ) : null}
       {label === "Swimming" ? (
-        <svg {...commonProps}><circle cx="15.5" cy="6.5" r="1.6" /><path d="M6 12c2.5-3 5.6-4 10.5-2.8" /><path d="M4 16c2-1.4 4-1.4 6 0s4 1.4 6 0 4-1.4 6 0" /><path d="M4 20c2-1.4 4-1.4 6 0s4 1.4 6 0 4-1.4 6 0" /></svg>
+        <svg {...commonProps}><circle cx="29" cy="17" r="3.2" fill="currentColor" stroke="none" /><path d="M21 25C24 22 30 22 36 26" /><path d="M12 28C16 24 20 32 24 28C28 24 32 32 36 28C40 24 44 32 48 28" /><path d="M12 36C16 32 20 40 24 36C28 32 32 40 36 36C40 32 44 40 48 36" /></svg>
       ) : null}
       {label === "Gym" ? (
-        <svg {...commonProps}><path d="M4 12h16" /><path d="M6 8v8" /><path d="M9 9.5v5" /><path d="M15 9.5v5" /><path d="M18 8v8" /></svg>
+        <svg {...commonProps}><path d="M17 28H39" /><rect x="11" y="23" width="5" height="10" rx="1.5" /><rect x="17" y="20" width="5" height="16" rx="1.5" /><rect x="34" y="20" width="5" height="16" rx="1.5" /><rect x="40" y="23" width="5" height="10" rx="1.5" /></svg>
       ) : null}
       {label === "At home" ? (
-        <svg {...commonProps}><path d="m4 11 8-6 8 6v9H4v-9Z" /><path d="M9.5 20v-6h5v6" /></svg>
+        <svg {...commonProps}><path d="M15 29L28 17L41 29" /><path d="M19 28V41H37V28" /><path d="M25 41V34H31V41" /></svg>
       ) : null}
       {label === "Stretching" ? (
-        <svg {...commonProps}><circle cx="14" cy="4" r="1.6" /><path d="m13 7-3 5 4 2" /><path d="m10 12-5 5" /><path d="m14 14 4 5" /><path d="m12 8-4-2" /><path d="m13 7 4 3" /></svg>
+        <svg {...commonProps}><circle cx="28" cy="14" r="3.2" fill="currentColor" stroke="none" /><path d="M28 19V29M28 23L20 19M28 23L36 19M28 29L20 40M28 29L37 40" /></svg>
       ) : null}
     </span>
   );
@@ -2095,12 +2098,10 @@ function SafetyHeartIcon() {
 function SafetyLungsIcon() {
   return (
     <svg className="h-6 w-6" viewBox="0 0 40 40" fill="none">
-      <path d="M20 7.5v11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M17.2 8.5h5.6M17.2 12h5.6M17.2 15.5h5.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M20 18.5c-2 1.1-3.2 2.8-3.8 5.1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M20 18.5c2 1.1 3.2 2.8 3.8 5.1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M16.8 18.4C11.4 19.6 8 25.4 8 32.1c0 2.8 1.8 4.4 4.1 3.4 4.2-1.7 6.1-5.8 6.1-11.8v-4c0-.9-.6-1.5-1.4-1.3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M23.2 18.4C28.6 19.6 32 25.4 32 32.1c0 2.8-1.8 4.4-4.1 3.4-4.2-1.7-6.1-5.8-6.1-11.8v-4c0-.9.6-1.5 1.4-1.3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 7.5v11.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M20 18.7c-2.2 1.3-3.8 3.4-4.4 6.1M20 18.7c2.2 1.3 3.8 3.4 4.4 6.1" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M16.6 17.3C11 19.5 8 25.8 8 31.5c0 2.6 1.5 4 3.8 3.1 4.1-1.6 6.1-5.7 6.1-11.3v-4.4c0-1.1-.4-1.9-1.3-1.6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M23.4 17.3c5.6 2.2 8.6 8.5 8.6 14.2 0 2.6-1.5 4-3.8 3.1-4.1-1.6-6.1-5.7-6.1-11.3v-4.4c0-1.1.4-1.9 1.3-1.6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -2108,9 +2109,11 @@ function SafetyLungsIcon() {
 function SafetyDizzyIcon() {
   return (
     <svg className="h-6 w-6" viewBox="0 0 40 40" fill="none">
-      <path d="M23.5 32.5H16c-5 0-8.5-3.8-8.5-8.7v-3.2c0-5.8 4.5-10.4 10.1-10.4h1.8c4.6 0 8.2 3.7 8.2 8.3v1.3l4 5.1h-3.9v3.3c0 2.4-1.8 4.3-4.2 4.3Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-      <path d="M14.2 21.4h.01M21.8 21.4h.01M14.8 26.6c2.4-1.5 5-1.5 7.4 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-      <path d="M10.2 8.2c-1.1-1-2.4-1-3.5 0s-1.1 2.3 0 3.3c1.1 1 2.4 1 3.5 0s1.1-2.3 0-3.3ZM32.7 10.8c-1-.9-2.1-.9-3.1 0s-1 2.1 0 3 2.1.9 3.1 0 1-2.1 0-3Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M20 32.5c6.5 0 11.8-4.9 11.8-11 0-6.3-5.1-11.2-11.8-11.2S8.2 15.2 8.2 21.5c0 6.1 5.3 11 11.8 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15.3 21.2h.01M24.7 21.2h.01" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+      <path d="M16.2 26.2c2.4-1.5 5.2-1.5 7.6 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M11.6 9.2c-1.4-1.2-3.2-1.2-4.5 0M32.9 9.2c-1.4-1.2-3.2-1.2-4.5 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M13.7 6.5h.01M26.3 6.5h.01" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
     </svg>
   );
 }
@@ -2129,9 +2132,11 @@ function SafetyFeverIcon() {
 function SafetyWeaknessIcon() {
   return (
     <svg className="h-6 w-6" viewBox="0 0 40 40" fill="none">
-      <path d="M10 29c4.8-.5 8.7-2.5 11.4-6.1l3.8-5.1c1-1.3 3.2-.8 3.3.8.2 3.8-1.5 7.4-4.4 9.8L22 30.2c-2.4 2-5.4 3-8.4 3H9.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M11.2 28.8c-1.3-1.8-.8-4.1 1-5.3l6-3.8c1.7-1 3.8.1 3.8 2.1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M8.2 18.3 6 16.1M12.3 14.1l-1-3M29.3 13.2l2.4-2.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M12.5 29.5h10.2c3.4 0 6.1-2.7 6.1-6.1v-5.8c0-1.1-.8-1.9-1.9-1.9s-1.9.8-1.9 1.9v4.3" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M25 22V14c0-1.1-.8-1.9-1.9-1.9s-1.9.8-1.9 1.9v8" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M21.2 22V12.8c0-1.1-.8-1.9-1.9-1.9s-1.9.8-1.9 1.9V22" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M17.4 22v-6.3c0-1.1-.8-1.9-1.9-1.9s-1.9.8-1.9 1.9v10.8l-1.8-1.8c-.9-.9-2.2-.9-3 0-.8.8-.8 2.1 0 2.9l3.7 3.7c1.2 1.2 2.9 1.9 4.7 1.9h5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.2 16.2 6 14M10.7 11.8l-.8-2.7M31.4 12.2l2.2-2.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
     </svg>
   );
 }
@@ -2148,8 +2153,8 @@ function SafetyDropIcon() {
 function SafetyLightningIcon() {
   return (
     <svg className="h-6 w-6" viewBox="0 0 40 40" fill="none">
-      <path d="M20 7.8c-4.2 1.9-6.4 5.8-5.4 10.5l1.4 6.8c.5 2.6 2.1 4.7 4.4 6 2.2-1.3 3.8-3.4 4.3-6l1.4-6.8C27 13.6 24.2 9.6 20 7.8Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-      <path d="M20 12v17M14 17h12M9 16l-3-2M9 23l-3 1M31 16l3-2M31 23l3 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="m22.2 6.8-10 15.1h7.1l-1.5 11.3 10-15.1h-7.1l1.5-11.3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10.1 12.6 7.4 10M9 28.6l-3.5 1.5M29.9 12.6l2.7-2.6M31 28.6l3.5 1.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }
@@ -2335,3 +2340,4 @@ function formatTime(seconds: number) {
   const sec = (seconds % 60).toString().padStart(2, "0");
   return `${min}:${sec}`;
 }
+
