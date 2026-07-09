@@ -181,22 +181,26 @@ export function OnboardingStateMachine() {
           {((step === 9 && !isCareCodeFlow) || (step === 8 && isCareCodeFlow)) ? <ReadyToGenerate /> : null}
         </div>
 
-        <div className="mt-6 space-y-3">
+        <div className="mt-5 space-y-2.5">
           {step === 0 ? (
             <>
-              <div>
+              <div className="space-y-2.5">
                 <Button className="w-full" onClick={() => { demoStore.beginCareCode(); setCodeInitialStage("entry"); setCodeOpen(true); }}>I have a care code</Button>
                 <button
-                  className="mt-2 block w-full text-right text-xs font-semibold text-onco-muted hover:text-onco-sage"
+                  className="block w-full py-2 text-center text-sm font-semibold text-onco-sage hover:text-onco-ink"
+                  type="button"
+                  onClick={() => { demoStore.beginSelfStart(); setSelfOpen(true); }}
+                >
+                  Start on my own
+                </button>
+                <button
+                  className="block w-full py-1 text-center text-xs font-semibold text-onco-muted-light hover:text-onco-sage"
                   type="button"
                   onClick={() => { demoStore.beginCareCode(); setCodeInitialStage("forgot"); setCodeOpen(true); }}
                 >
                   Need help finding your code?
                 </button>
               </div>
-              <button className="w-full py-1 text-center text-xs font-semibold text-onco-muted-light" type="button" onClick={() => { demoStore.beginSelfStart(); setSelfOpen(true); }}>
-                Start on my own
-              </button>
             </>
           ) : (
             <>
@@ -238,7 +242,7 @@ function Welcome() {
           </svg>
         </div>
         <h1 className="onco-display text-[34px] font-extrabold leading-[0.96]">Movement,<br />made for recovery.</h1>
-        <p className="mt-4 text-[14.5px] leading-6 text-onco-muted">
+        <p className="mt-4 text-sm leading-6 text-onco-muted">
           A structured movement program built for life during and after cancer treatment - guided by Artie, your personal activity consultant.
         </p>
       </div>
@@ -266,19 +270,19 @@ function Baseline() {
     <ScreenTitle title="What did movement look like before cancer?" subtitle="Artie builds from wherever you are today.">
       <div className="space-y-2">
         {options.map((option) => (
-          <Choice key={option} selected={onboarding.previousActivity === option} onClick={() => demoStore.updateOnboarding({ previousActivity: onboarding.previousActivity === option ? "" : option })}>{option}</Choice>
+          <Choice key={option} hideIndicator selected={onboarding.previousActivity === option} onClick={() => demoStore.updateOnboarding({ previousActivity: onboarding.previousActivity === option ? "" : option })}>{option}</Choice>
         ))}
       </div>
       <label className="mt-4 block">
         <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-muted-light">And right now?</span>
         <textarea className="onco-input min-h-24" value={onboarding.currentCapacity} onChange={(event) => demoStore.updateOnboarding({ currentCapacity: event.target.value })} />
       </label>
-      <div className="mt-4 rounded-[18px] border border-onco-line bg-white p-4">
+      <div className="mt-4 rounded-[14px] border border-onco-line bg-white p-3">
         <div className="mb-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-muted-light">Starting point</p>
-          <p className="mt-1 text-sm leading-5 text-onco-muted">A rough usual week is enough. Artie can refine this later.</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-ink">Starting point</p>
+          <p className="mt-1 text-xs leading-5 text-onco-muted">A rough usual week is enough. Artie can refine this later.</p>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2">
           <NumberField label="Walking min/wk" value={onboarding.weeklyWalkingMinutes} onChange={(weeklyWalkingMinutes) => demoStore.updateOnboarding({ weeklyWalkingMinutes })} />
           <NumberField label="Other min/wk" value={onboarding.weeklyOtherActivityMinutes} onChange={(weeklyOtherActivityMinutes) => demoStore.updateOnboarding({ weeklyOtherActivityMinutes })} />
         </div>
@@ -289,9 +293,9 @@ function Baseline() {
           onChange={(baselineIntensity) => demoStore.updateOnboarding({ baselineIntensity })}
           options={baselineIntensityOptions.map((value) => ({ label: value, value }))}
         />
-        <details className="mt-3 rounded-2xl bg-[#F8F6EF] p-3">
-          <summary className="cursor-pointer text-sm font-semibold text-onco-ink">Add steps or clinic test</summary>
-          <div className="mt-3 grid grid-cols-2 gap-3">
+        <details className="mt-3 rounded-[14px] bg-[#F8F6EF] p-3">
+          <summary className="cursor-pointer text-xs font-semibold text-onco-ink">Add steps or clinic test</summary>
+          <div className="mt-3 grid grid-cols-2 gap-2">
             <NumberField label="Avg steps/day" value={onboarding.averageDailySteps} onChange={(averageDailySteps) => demoStore.updateOnboarding({ averageDailySteps })} />
             <NumberField label="6-min walk ft" value={onboarding.sixMinuteWalk} onChange={(sixMinuteWalk) => demoStore.updateOnboarding({ sixMinuteWalk })} placeholder="Optional" />
           </div>
@@ -305,7 +309,7 @@ function Baseline() {
             <span className="text-xs leading-5 text-onco-muted">Use my first 7 days of tracking to refine this baseline.</span>
           </label>
         </details>
-        <div className="mt-3 rounded-2xl bg-onco-sage-soft p-3">
+        <div className="mt-3 rounded-[14px] bg-onco-sage-soft p-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-semibold uppercase tracking-[0.05em] text-onco-sage">Estimated baseline</p>
             <p className="shrink-0 text-sm font-bold text-onco-ink">{baselineMet || 0} MET-hrs/wk</p>
@@ -321,15 +325,20 @@ function Safety() {
   const { onboarding } = useDemoStore();
   const selectedFlags = onboarding.redFlags;
   const safetyMessage = selectedFlags.length
-    ? `You checked ${selectedFlags[0].toLowerCase()}. We'll pause plan setup and suggest checking with your care team first - we'll help you know what to ask.`
+    ? `You checked ${formatSelectionList(selectedFlags.map((flag) => flag.toLowerCase()))}. We'll pause plan setup and suggest checking with your care team first - we'll help you know what to ask.`
     : "If none of these are happening today, Artie can keep building your plan gently.";
   return (
     <ScreenTitle title="Before we build your plan, a quick safety check" subtitle="Are you currently experiencing any of these? Be honest - this just helps us keep your plan safe.">
       <div className="space-y-2">
-        {redFlags.map((flag) => (
-          <Choice checkbox key={flag} selected={onboarding.redFlags.includes(flag)} onClick={() => toggleList(onboarding.redFlags, flag, (redFlags) => demoStore.updateOnboarding({ redFlags }))}>{flag}</Choice>
-        ))}
-        <Choice checkbox selected={onboarding.redFlags.length === 0} onClick={() => demoStore.updateOnboarding({ redFlags: [] })}>None of these</Choice>
+        {redFlags.map((flag) => {
+          const isSelected = onboarding.redFlags.includes(flag);
+          return (
+            <SafetyOption key={flag} label={flag} selected={isSelected} onClick={() => toggleList(onboarding.redFlags, flag, (redFlags) => demoStore.updateOnboarding({ redFlags }))}>
+              {flag}
+            </SafetyOption>
+          );
+        })}
+        <SafetyOption label="None of these" selected={onboarding.redFlags.length === 0} onClick={() => demoStore.updateOnboarding({ redFlags: [] })}>None of these</SafetyOption>
       </div>
       <div className={cn("mt-4 rounded-2xl border p-4 text-sm leading-6", selectedFlags.length ? "border-onco-sage/20 bg-onco-sage-soft text-onco-sage" : "border-onco-sage/15 bg-onco-sage-soft text-onco-sage")}>
         <p className="font-semibold">{selectedFlags.length ? "Safety note" : "Good to continue"}</p>
@@ -341,16 +350,12 @@ function Safety() {
 
 function Preferences() {
   const { onboarding } = useDemoStore();
-  const preferenceMessage = preferenceSupportMessage(onboarding.preferences, onboarding.currentCapacity);
+  const preferenceMessage = preferenceSupportMessage(onboarding.preferences, onboarding.preferenceChips, onboarding.currentCapacity);
   return (
     <ScreenTitle title="What kind of movement sounds doable?" subtitle="Pick anything that appeals - even a little. We'll start with one.">
       <ChipGrid values={preferences} selected={onboarding.preferences} onToggle={(value) => toggleList(onboarding.preferences, value, (preferences) => demoStore.updateOnboarding({ preferences }))} />
       <ChipGroup className="mt-4" label="How it should feel" values={preferenceChips} selected={onboarding.preferenceChips} onToggle={(value) => toggleList(onboarding.preferenceChips, value, (preferenceChips) => demoStore.updateOnboarding({ preferenceChips }))} />
-      {preferenceMessage ? (
-        <div className="mt-4 rounded-2xl border border-onco-sage/15 bg-onco-sage-soft p-4 text-sm leading-6 text-onco-sage">
-          {preferenceMessage}
-        </div>
-      ) : null}
+      {preferenceMessage ? <SelectionNote>{preferenceMessage}</SelectionNote> : null}
     </ScreenTitle>
   );
 }
@@ -379,62 +384,78 @@ function Barriers() {
           />
         ))}
       </div>
-      {barrierMessage ? (
-        <div className="mt-5 rounded-2xl border border-onco-sage/15 bg-onco-sage-soft p-4 text-sm leading-6 text-onco-sage">
-          {barrierMessage}
-        </div>
-      ) : null}
+      {barrierMessage ? <SelectionNote>{barrierMessage}</SelectionNote> : null}
     </ScreenTitle>
   );
 }
 
 function Environment() {
   const { onboarding } = useDemoStore();
-  const [trailSearchOpen, setTrailSearchOpen] = useState(false);
+  const [showTrailDetails, setShowTrailDetails] = useState(false);
   const trails = trailsForZip(onboarding.environmentZipCode);
   const visibleTrails = trails.slice(0, 2);
   const selectedTrail = visibleTrails.find((trail) => trail.id === onboarding.selectedTrailId) || visibleTrails[0];
   const hasZip = onboarding.environmentZipCode.trim().length === 5;
   const hasExactZipRoutes = hasZip && visibleTrails.some((trail) => !trail.zipCodes.includes("default"));
+  const environmentNote = environmentSupportMessage(onboarding.environment);
   return (
     <ScreenTitle title="Where will movement happen?" subtitle="Quick yes or no - this helps Artie suggest routes and backups that actually work for you.">
-      <div className="space-y-3">
-        {environmentOptions.map((option) => (
-          <EnvironmentToggleRow
-            checked={Boolean(onboarding.environment[option.key])}
-            icon={option.icon}
-            key={option.key}
-            label={option.label}
-            onChange={(checked) => demoStore.updateOnboarding({ environment: { ...onboarding.environment, [option.key]: checked } })}
-          />
-        ))}
+      <div className="space-y-2.5">
+        {environmentOptions.map((option) => {
+          const checked = Boolean(onboarding.environment[option.key]);
+          return (
+            <EnvironmentToggleRow
+              checked={checked}
+              icon={option.icon}
+              key={option.key}
+              label={option.label}
+              onChange={(nextChecked) => demoStore.updateOnboarding({ environment: { ...onboarding.environment, [option.key]: nextChecked } })}
+            />
+          );
+        })}
       </div>
-      <button
-        type="button"
-        className={cn("mt-4 flex w-full items-center justify-between rounded-2xl border border-onco-line bg-white px-4 py-3 text-left shadow-sm", trailSearchOpen && "border-onco-sage")}
-        onClick={() => setTrailSearchOpen((value) => !value)}
-      >
-        <span>
-          <span className="block text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-muted-light">Zip code for nearby trails</span>
-          <span className="mt-1 block text-sm font-semibold text-onco-ink">{trailSearchOpen ? "Enter ZIP and review routes" : "Tap to add ZIP code"}</span>
-        </span>
-        <span className="text-lg font-bold text-onco-sage">{trailSearchOpen ? "-" : "+"}</span>
-      </button>
-      {trailSearchOpen ? (
+      {environmentNote ? (
+        <SelectionNote>{environmentNote}</SelectionNote>
+      ) : null}
+      <div className="mt-4">
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.05em] text-onco-ink">Zip code for nearby trails</p>
+        <div className="relative">
+          <input
+            className="onco-input pr-12 font-semibold"
+            inputMode="numeric"
+            maxLength={5}
+            value={onboarding.environmentZipCode}
+            onChange={(event) => {
+              demoStore.updateOnboarding({ environmentZipCode: event.target.value.replace(/\D/g, "").slice(0, 5) });
+              setShowTrailDetails(false);
+            }}
+            placeholder="Enter 5-digit zip code"
+          />
+          <button
+            aria-label={showTrailDetails ? "Hide nearby trails" : "Show nearby trails"}
+            className="absolute right-3 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full bg-onco-sage-soft text-onco-sage transition disabled:opacity-40"
+            disabled={!hasZip}
+            type="button"
+            onClick={() => setShowTrailDetails((current) => !current)}
+          >
+            <svg
+              aria-hidden="true"
+              className={cn("h-4 w-4 transition-transform", showTrailDetails && "rotate-180")}
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2.5"
+              viewBox="0 0 24 24"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      {hasZip && showTrailDetails ? (
         <>
-      <label className="mt-3 block">
-        <input
-          className="onco-input"
-          inputMode="numeric"
-          maxLength={5}
-          value={onboarding.environmentZipCode}
-          onChange={(event) => demoStore.updateOnboarding({ environmentZipCode: event.target.value.replace(/\D/g, "").slice(0, 5) })}
-          placeholder="Enter 5-digit zip code"
-        />
-      </label>
-      {hasZip ? (
-        <>
-      <Card className="mt-4">
+      <Card className="mt-4 rounded-[16px] p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="font-semibold">Nearby short route ideas</p>
@@ -447,7 +468,7 @@ function Environment() {
         <div className="mt-3 space-y-2">
           {visibleTrails.map((trail) => (
             <button
-              className={cn("w-full rounded-2xl border p-3 text-left", selectedTrail.id === trail.id ? "border-onco-sage bg-onco-sage-soft" : "border-onco-line bg-white")}
+              className={cn("w-full rounded-[14px] border p-3 text-left transition", selectedTrail.id === trail.id ? "border-onco-sage bg-onco-sage-soft" : "border-onco-line bg-white")}
               key={trail.id}
               type="button"
               onClick={() => demoStore.updateOnboarding({ selectedTrailId: trail.id })}
@@ -457,7 +478,7 @@ function Environment() {
             </button>
           ))}
         </div>
-        <div className="mt-4 rounded-2xl bg-onco-sand/70 p-3">
+        <div className="mt-4 rounded-[14px] bg-onco-sand/70 p-3">
           <p className="font-semibold">{selectedTrail.name}</p>
           <p className="mt-1 text-xs font-semibold text-onco-muted">{selectedTrail.area} - {selectedTrail.distance}</p>
           <div className="mt-3 grid gap-1.5 text-xs leading-5 text-onco-muted">
@@ -481,10 +502,8 @@ function Environment() {
         </div>
       </Card>
         </>
-      ) : (
+      ) : !hasZip ? (
         <p className="mt-2 text-xs leading-5 text-onco-muted">Enter 5 digits to see nearby short route ideas.</p>
-      )}
-        </>
       ) : null}
     </ScreenTitle>
   );
@@ -495,15 +514,15 @@ function EnvironmentToggleRow({ checked, icon, label, onChange }: { checked: boo
     <button
       type="button"
       className={cn(
-        "relative flex min-h-[58px] w-full items-center gap-3 rounded-2xl border border-onco-line bg-white px-4 py-3 text-left font-semibold shadow-sm transition",
-        checked && "border-onco-sage bg-onco-sage text-onco-cream",
+        "onco-option-row",
+        checked ? "border-onco-sage bg-onco-sage text-onco-cream" : "border-onco-line bg-white text-onco-ink",
       )}
       onClick={() => onChange(!checked)}
     >
       <EnvironmentOptionIcon name={icon} selected={checked} />
-      <span className="min-w-0 flex-1 pr-7 text-[13.5px] leading-4">{label}</span>
+      <span className="min-w-0 flex-1 pr-7 text-sm leading-4">{label}</span>
       {checked ? (
-        <span className="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full border border-onco-cream/70 text-[10px]">
+        <span className="absolute right-3 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full border border-onco-cream/70 text-[10px] text-onco-cream">
           <CheckIcon />
         </span>
       ) : null}
@@ -513,7 +532,7 @@ function EnvironmentToggleRow({ checked, icon, label, onChange }: { checked: boo
 
 function EnvironmentOptionIcon({ name, selected }: { name: (typeof environmentOptions)[number]["icon"]; selected?: boolean }) {
   return (
-    <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-xl", selected ? "bg-onco-cream/15 text-onco-cream" : "bg-onco-cream text-onco-sage")} aria-hidden="true">
+    <span className={cn("onco-option-icon", selected && "text-onco-cream")} aria-hidden="true">
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
         {name === "path" ? (
           <>
@@ -573,21 +592,154 @@ function Support({ onAdd }: { onAdd: () => void }) {
 
 function GoalTracking({ onWearable }: { onWearable: (device: TrackingType) => void }) {
   const { onboarding } = useDemoStore();
+  const goalOptions = [
+    "Rebuild stamina for gardening and errands.",
+    "Feel less afraid of movement.",
+    "Support my long-term health outcomes.",
+    "Write my own...",
+  ];
+  const isCustomGoal = !goalOptions.slice(0, 3).includes(onboarding.goalAnchor);
+
+  function selectTrackingType(trackingType: TrackingType) {
+    demoStore.updateOnboarding({ trackingType });
+    if (trackingType !== "Manual") onWearable(trackingType);
+  }
+
   return (
     <ScreenTitle title="Last thing - what matters most to you?" subtitle="This becomes your anchor. Artie will bring it back to you on the hard days.">
-      <Select label="Goal anchor" value={onboarding.goalAnchor} onChange={(goalAnchor) => demoStore.updateOnboarding({ goalAnchor })} options={["Rebuild stamina for gardening and errands.", "Walk around the block confidently.", "Feel less afraid of movement.", "Return to family activities."].map((value) => ({ label: value, value }))} />
+      <div className="space-y-2.5">
+        {goalOptions.map((goal) => {
+          const isOwnOption = goal.includes("own");
+          const isSelected = isOwnOption ? isCustomGoal : onboarding.goalAnchor === goal;
+          if (isOwnOption && isSelected) {
+            return (
+              <div key={goal}>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-muted-light">Write your own</p>
+                <textarea
+                  autoFocus
+                  aria-label="Write my own goal"
+                  className="onco-input min-h-[112px] resize-y py-4 text-base font-semibold leading-6"
+                  placeholder="Tell us what matters most to you..."
+                  value={onboarding.goalAnchor}
+                  onChange={(event) => demoStore.updateOnboarding({ goalAnchor: event.target.value })}
+                />
+              </div>
+            );
+          }
+          return (
+            <button
+              className={cn(
+                "onco-option-row",
+                isSelected && "onco-option-row-active",
+              )}
+              key={goal}
+              type="button"
+              onClick={() => demoStore.updateOnboarding({ goalAnchor: isOwnOption ? "" : isSelected ? "" : goal })}
+            >
+              <GoalAnchorIcon goal={goal} selected={isSelected} />
+              <span className="min-w-0 flex-1 pr-7">{goal}</span>
+              {isSelected ? (
+                <span className="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full border border-onco-cream/70 text-[10px]">
+                  <CheckIcon />
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+
       <Select
-        className="mt-4 block"
-        label="Tracking type"
+        className="mt-5 block"
+        label="Track automatically? Optional"
         value={onboarding.trackingType}
-        onChange={(trackingType) => {
-          demoStore.updateOnboarding({ trackingType });
-          if (trackingType !== "Manual") onWearable(trackingType);
-        }}
-        options={trackingOptions.map((value) => ({ label: value, value }))}
+        onChange={selectTrackingType}
+        options={trackingOptions.map((value) => ({ label: value === "Manual" ? "Manual" : value, value }))}
       />
       <Link className="onco-button-outline mt-4 w-full" href="/devices">Manage device connection</Link>
     </ScreenTitle>
+  );
+}
+
+function GoalAnchorIcon({ goal, selected }: { goal: string; selected: boolean }) {
+  return (
+    <span className={cn("onco-option-icon", selected && "text-onco-cream")} aria-hidden="true">
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9">
+        {goal.includes("stamina") ? (
+          <>
+            <path d="M4 8h16v10H4z" />
+            <path d="M7 11h1M10 11h1M13 11h1M16 11h1" />
+            <path d="M7 15h10" />
+          </>
+        ) : null}
+        {goal.includes("afraid") ? (
+          <>
+            <path d="M5 6.5 12 4l7 2.5v5.2c0 4.1-2.7 7.3-7 8.8-4.3-1.5-7-4.7-7-8.8V6.5Z" />
+            <path d="m8.5 12 2.4 2.4 4.7-5" />
+          </>
+        ) : null}
+        {goal.includes("long-term") ? (
+          <>
+            <path d="M4 20h16" />
+            <path d="M6 20V9l6-4 6 4v11" />
+            <path d="M10 20v-6h4v6" />
+          </>
+        ) : null}
+        {goal.includes("own") ? (
+          <>
+            <path d="M6 18h12" />
+            <path d="m8 14 7.8-7.8a2 2 0 0 1 2.8 2.8L10.8 16.8 7 17l1-3Z" />
+          </>
+        ) : null}
+      </svg>
+    </span>
+  );
+}
+
+function TrackingTypeIcon({ trackingType }: { trackingType: TrackingType }) {
+  return (
+    <span className="grid h-7 w-7 place-items-center text-onco-sage" aria-hidden="true">
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.9">
+        {trackingType === "Apple Health" ? (
+          <>
+            <path d="M5 5h14v11H5z" />
+            <path d="M8 19h8" />
+            <path d="M12 16v3" />
+            <path d="m8 10 2.2 2.2L12 8l2 5 1.5-3H18" />
+          </>
+        ) : null}
+        {trackingType === "Google Fit" ? (
+          <>
+            <path d="M12 19s-7-4.4-7-9.4A3.7 3.7 0 0 1 11.3 7L12 7.8l.7-.8A3.7 3.7 0 0 1 19 9.6C19 14.6 12 19 12 19Z" />
+          </>
+        ) : null}
+        {trackingType === "Garmin" ? (
+          <>
+            <rect x="7" y="4" width="10" height="16" rx="3" />
+            <path d="M10 8h4" />
+            <path d="M10 14h4" />
+          </>
+        ) : null}
+        {trackingType === "Fitbit" ? (
+          <>
+            <circle cx="8" cy="8" r="1.1" fill="currentColor" stroke="none" />
+            <circle cx="12" cy="8" r="1.1" fill="currentColor" stroke="none" />
+            <circle cx="16" cy="8" r="1.1" fill="currentColor" stroke="none" />
+            <circle cx="8" cy="12" r="1.1" fill="currentColor" stroke="none" />
+            <circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none" />
+            <circle cx="16" cy="12" r="1.1" fill="currentColor" stroke="none" />
+            <circle cx="8" cy="16" r="1.1" fill="currentColor" stroke="none" />
+            <circle cx="12" cy="16" r="1.1" fill="currentColor" stroke="none" />
+            <circle cx="16" cy="16" r="1.1" fill="currentColor" stroke="none" />
+          </>
+        ) : null}
+        {trackingType === "Manual" ? (
+          <>
+            <path d="M6 18h12" />
+            <path d="m8 14 7.8-7.8a2 2 0 0 1 2.8 2.8L10.8 16.8 7 17l1-3Z" />
+          </>
+        ) : null}
+      </svg>
+    </span>
   );
 }
 
@@ -634,7 +786,7 @@ export function PlanRevealClient() {
       <div className="mt-8 text-center">
         <ArtieAvatar className="mx-auto mb-4 h-12 w-12" />
         <h1 className="onco-display text-[28px] font-extrabold leading-[1.06] text-onco-ink">{firstName}, your first prescription is ready</h1>
-        <p className="mx-auto mt-3 max-w-[320px] text-[14.5px] leading-6 text-onco-muted">
+        <p className="mx-auto mt-3 max-w-[320px] text-sm leading-6 text-onco-muted">
           It's small on purpose. We're building a foundation, not chasing a finish line.
         </p>
       </div>
@@ -1120,7 +1272,7 @@ export function DoctorSummaryClient() {
         <Summary label="Phase I target" text={`Progress gradually toward +10 MET-hrs/week above the ${baselineMet || 0} MET-hrs/week baseline.`} />
       </Card>
       <Card className="mt-5 space-y-3"><Summary label="Context" text={`${state.onboarding.cancerType}, ${state.onboarding.treatmentStatus}. Goal: ${state.onboarding.goalAnchor}`} /><Summary label="Current prescription" text={`${state.patientPlan.activity} · ${state.patientPlan.daysPerWeek} days/wk · ${state.patientPlan.minutes} min · ${state.patientPlan.metHours} MET-hrs/wk.`} /><Summary label="Adherence" text={`${minutes} minutes logged · ${met.toFixed(2)} MET-hours earned.`} /><Summary label="Symptoms & barriers" text={state.onboarding.barriers.join(", ")} /><Summary label="Questions for doctor" text="Any activity restrictions? Is neuropathy affecting fall risk? Which symptoms should make me stop and call?" /></Card>
-      <div className="mt-4 grid gap-3"><Button onClick={() => { void navigator.clipboard?.writeText(summary); demoStore.toast("Copied for MyChart"); }}>Copy for MyChart</Button><Button variant="outline" onClick={() => demoStore.toast("PDF export prepared.", "info")}>PDF</Button><Button variant="outline" onClick={() => setShare(true)}>Email/share</Button><Link className="onco-button-outline w-full" href="/onboarding">Back to start page</Link></div>
+      <div className="mt-4 grid gap-3"><Button onClick={() => { void navigator.clipboard?.writeText(summary); demoStore.toast("Copied for MyChart"); }}>Copy for MyChart</Button><Button variant="outline" onClick={() => demoStore.toast("PDF export prepared.", "info")}>PDF</Button><Link className="onco-button-outline w-full" href="/onboarding">Back to start page</Link></div>
       <Modal open={share} title="Share summary" onClose={() => setShare(false)}><p className="text-sm text-onco-muted">Send this summary to your care team for plan review.</p><Button className="mt-4" onClick={() => { demoStore.sharePatientDetailsWithDoctor(); setShare(false); }}>Send to doctor for review</Button></Modal>
     </PatientShell>
   );
@@ -1237,6 +1389,9 @@ function CareTeamCodeModal({ initialStage = "entry", open, onClose, onSuccess }:
     if (!open) return;
     setStage(initialStage);
     setError("");
+    if (initialStage === "entry") {
+      setCode("SAM-GVOC-7429");
+    }
     if (initialStage === "forgot") {
       setRecoveryEmail("");
       setOtp("");
@@ -1663,7 +1818,7 @@ function SupportModal({ open, onClose }: { open: boolean; onClose: () => void })
 }
 
 function ScreenTitle({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
-  return <div><h1 className="onco-display text-[28px] font-extrabold leading-[1.08] tracking-normal text-onco-ink">{title}</h1><p className="mb-6 mt-3 text-[14.5px] leading-6 text-onco-muted">{subtitle}</p>{children}</div>;
+  return <div><h1 className="onco-mobile-title">{title}</h1><p className="onco-mobile-subtitle">{subtitle}</p>{children}</div>;
 }
 
 function ChipGroup({ label, values, selected, onToggle, className, dense = true }: { label: string; values: string[]; selected: string[]; onToggle: (value: string) => void; className?: string; dense?: boolean }) {
@@ -1700,7 +1855,7 @@ function ChipGroup({ label, values, selected, onToggle, className, dense = true 
 
 function ChipGrid({ values, selected, onToggle }: { values: string[]; selected: string[]; onToggle: (value: string) => void }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       {values.map((value) => {
         const isSelected = selected.includes(value);
         return (
@@ -1708,12 +1863,12 @@ function ChipGrid({ values, selected, onToggle }: { values: string[]; selected: 
             type="button"
             key={value}
             className={cn(
-              "relative flex min-h-[58px] w-full items-center gap-3 rounded-2xl border border-onco-line bg-white px-4 py-3 text-left text-sm font-semibold text-onco-ink transition",
-              isSelected && "border-onco-sage bg-onco-sage text-onco-cream",
+              "onco-option-row",
+              isSelected && "onco-option-row-active",
             )}
             onClick={() => onToggle(value)}
           >
-            <WalkIcon className="shrink-0 text-xl" />
+            <MovementOptionIcon label={value} selected={isSelected} />
             <span className="min-w-0 flex-1 pr-7">{value}</span>
             {isSelected ? (
               <span className="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full border border-onco-cream/70 text-[10px]">
@@ -1727,26 +1882,284 @@ function ChipGrid({ values, selected, onToggle }: { values: string[]; selected: 
   );
 }
 
-function Choice({ children, selected, checkbox, onClick }: { children: React.ReactNode; selected: boolean; checkbox?: boolean; onClick: () => void }) {
+function MovementOptionIcon({ label, selected }: { label: string; selected: boolean }) {
+  const commonProps = {
+    className: "h-6 w-6",
+    fill: "none",
+    stroke: "currentColor",
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    strokeWidth: 1.9,
+    viewBox: "0 0 24 24",
+  };
+
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "onco-option-icon",
+        selected && "text-onco-cream",
+      )}
+    >
+      {label === "Walking" ? (
+        <svg {...commonProps}><circle cx="12" cy="4" r="1.6" /><path d="m11 7-2 5 3 2 2 6" /><path d="m9 12-3 5" /><path d="m13 8 3 3 2.5.5" /></svg>
+      ) : null}
+      {label === "Gardening" ? (
+        <svg {...commonProps}><path d="M12 14V6" /><path d="M12 9C8.5 6.5 5.5 8 5.5 8s2 4 6.5 3.2" /><path d="M12 8c3.5-3.2 7-1.4 7-1.4S17.1 11 12 9.8" /><path d="M6.5 14h11l-1.2 6H7.7l-1.2-6Z" /><path d="M5.5 20h13" /></svg>
+      ) : null}
+      {label === "Cycling" ? (
+        <svg {...commonProps}><circle cx="6" cy="17" r="3" /><circle cx="18" cy="17" r="3" /><path d="M6 17h5l3-6h-4l-4 6Z" /><path d="m11 17-3-8" /><path d="m14 11 4 6" /><path d="M9 7h4" /></svg>
+      ) : null}
+      {label === "Swimming" ? (
+        <svg {...commonProps}><circle cx="15.5" cy="6.5" r="1.6" /><path d="M6 12c2.5-3 5.6-4 10.5-2.8" /><path d="M4 16c2-1.4 4-1.4 6 0s4 1.4 6 0 4-1.4 6 0" /><path d="M4 20c2-1.4 4-1.4 6 0s4 1.4 6 0 4-1.4 6 0" /></svg>
+      ) : null}
+      {label === "Gym" ? (
+        <svg {...commonProps}><path d="M4 12h16" /><path d="M6 8v8" /><path d="M9 9.5v5" /><path d="M15 9.5v5" /><path d="M18 8v8" /></svg>
+      ) : null}
+      {label === "At home" ? (
+        <svg {...commonProps}><path d="m4 11 8-6 8 6v9H4v-9Z" /><path d="M9.5 20v-6h5v6" /></svg>
+      ) : null}
+      {label === "Stretching" ? (
+        <svg {...commonProps}><circle cx="14" cy="4" r="1.6" /><path d="m13 7-3 5 4 2" /><path d="m10 12-5 5" /><path d="m14 14 4 5" /><path d="m12 8-4-2" /><path d="m13 7 4 3" /></svg>
+      ) : null}
+    </span>
+  );
+}
+
+function MovementWalkingIcon() {
+  return (
+    <svg className="h-9 w-9" viewBox="0 0 44 44" fill="none">
+      <circle cx="22" cy="8" r="3" fill="#2D6A56" />
+      <path d="M21 12 17 22l6 4 4 10M18 22l-5 7M23 15l5 5 5 1" stroke="#2D6A56" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 34c8 3 17 3 26 0" stroke="#E8C15D" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function MovementGardeningIcon() {
+  return (
+    <svg className="h-10 w-10" viewBox="0 0 52 52" fill="none">
+      <path d="M36.5 31.8 43 18.5c.6-1.2 2.1-1.7 3.2-1.1 1.2.6 1.6 2.1 1 3.2l-6.5 13.3-4.2-2.1Z" fill="#E6A977" stroke="#C7835C" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M34.4 32.1c.5-2.3 2.8-3.9 5.1-3.4l3.2.7-2.2 10.3c-.5 2.3-2.8 3.9-5.1 3.4-2.3-.5-3.9-2.8-3.4-5.1l1.1-5.1c.1-.5.6-.9 1.3-.8Z" fill="#D7D5DB" stroke="#9B9BA4" strokeWidth="1.2" />
+      <path d="M13.3 26.2h22.4l-2.5 16.4H15.8l-2.5-16.4Z" fill="#F2A779" stroke="#D07A57" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M11.7 24.2c0-1.9 1.5-3.4 3.4-3.4h18.8c1.9 0 3.4 1.5 3.4 3.4 0 1.9-1.5 3.4-3.4 3.4H15.1c-1.9 0-3.4-1.5-3.4-3.4Z" fill="#FFC093" stroke="#D07A57" strokeWidth="1.3" />
+      <path d="M17 23c2.8-2.1 12.6-2.1 15.3 0" fill="#8B5135" />
+      <path d="M24.5 22V9.3" stroke="#5DA258" strokeWidth="2.3" strokeLinecap="round" />
+      <path d="M24.5 12.5c-6.3-5.7-13.2-2.3-13.2-2.3s4.3 8 13.2 5.2M24.8 11.7C29.9 2.9 38 5 38 5s1.2 9.1-12.8 11.2M24.5 18.5c-5.8-5-11.8-1.5-11.8-1.5s4.3 6.7 11.8 4M24.8 19.2c5.4-5.7 11.6-2.8 11.6-2.8s-3.5 7.3-11.6 5.6" fill="#A9D070" stroke="#6AA35A" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M24.5 36.3s-3.1-1.8-3.1-4.1c0-1.3 1.5-2 2.4-1l.7.6.7-.6c1-.9 2.4-.3 2.4 1 0 2.3-3.1 4.1-3.1 4.1Z" fill="#EF7B61" />
+      <path d="M8.8 42c4.4-1.1 6.8-3.2 7.8-6.8M16.3 35.2c-5.4-1.1-8.3 2.2-8.3 2.2s3.8 3.1 8.3.5" fill="#A9D070" stroke="#6AA35A" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function MovementCyclingIcon() {
+  return (
+    <svg className="h-9 w-9" viewBox="0 0 44 44" fill="none">
+      <circle cx="13" cy="30" r="7" stroke="#2D6A56" strokeWidth="2" />
+      <circle cx="31" cy="30" r="7" stroke="#2D6A56" strokeWidth="2" />
+      <path d="M13 30h8l5-10h-7l-6 10ZM21 30l-5-12M24 20l5 10M18 15h7" stroke="#C66B3D" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="28" cy="11" r="3" fill="#2D6A56" />
+      <path d="M27 15 23 20" stroke="#2D6A56" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function MovementSwimmingIcon() {
+  return (
+    <svg className="h-9 w-9" viewBox="0 0 44 44" fill="none">
+      <circle cx="25" cy="13" r="3" fill="#2D6A56" />
+      <path d="M13 24c4-5 9-7 17-5M10 31c3-2.3 6-2.3 9 0s6 2.3 9 0 6-2.3 9 0M10 36c3-2.3 6-2.3 9 0s6 2.3 9 0 6-2.3 9 0" stroke="#6FA8C9" strokeWidth="2" strokeLinecap="round" />
+      <path d="M19 22 14 18" stroke="#C66B3D" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function MovementGymIcon() {
+  return (
+    <svg className="h-9 w-9" viewBox="0 0 44 44" fill="none">
+      <path d="M7 24h30M11 17v14M16 19v10M28 19v10M33 17v14" stroke="#2D6A56" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M19 24h6" stroke="#C66B3D" strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function MovementHomeIcon() {
+  return (
+    <svg className="h-9 w-9" viewBox="0 0 44 44" fill="none">
+      <path d="M9 22 22 11l13 11v14H13V22" fill="#F7F4ED" stroke="#2D6A56" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M19 36V25h6v11M13 19v-6h5" stroke="#2D6A56" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 34h28" stroke="#E8C15D" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function MovementStretchingIcon() {
+  return (
+    <svg className="h-12 w-12" viewBox="0 0 64 64" fill="none">
+      <ellipse cx="31" cy="51" rx="22" ry="4" fill="#E7EEE4" />
+      <path d="M16 44c5.8-5.8 13.2-5.7 22.1-.4 4.7 2.8 10.1 1.4 14.4-1.6 1.4-1 2.9.8 1.7 2.1-5 5.7-14.2 7-23.1 2.5-5.4-2.8-10.2-2.5-15.1-2.6Z" fill="#0D5E49" />
+      <path d="M19.5 43.4c-7.4-4.1-12.2-3.5-15.6.2-1.1 1.2 0 3 1.7 2.8 8.8-1 14.1 1.2 20.9 3.2 7 2 13.2.8 18.1-3.4" fill="#0A4F40" />
+      <path d="M26.8 31.6c-4 4.2-5.2 9.3-3.4 13.2h16.3c1.7-5.4-.2-9.7-4.7-13.2H26.8Z" fill="#6BA149" />
+      <path d="M32.2 29.2c-2.9-5.1-.8-11.6 4.6-16.1 4.6-3.8 11.3-5.5 20-4.6 1.8.2 2.1 2.6.4 3.2-7.6 2.7-13.1 6.7-16.6 13.4" fill="#F4A26C" />
+      <path d="M32.2 29.2c-2.9-5.1-.8-11.6 4.6-16.1 4.6-3.8 11.3-5.5 20-4.6" stroke="#D98557" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M39.8 31.3c3.9 7 8 10.7 15.2 10.5 1.8 0 2.4 2.3.8 3.1-7.6 3.6-15.2-.3-21.1-9" fill="#F4A26C" />
+      <path d="M39.8 31.3c3.9 7 8 10.7 15.2 10.5" stroke="#D98557" strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="38.3" cy="23" r="8.5" fill="#F4A26C" />
+      <path d="M30.6 19.6c.2-6.6 7.2-10.7 13.1-7.7 4.1 0 6.7 3.3 6.3 7.2-.3 3-2.4 4.6-5.5 4.6-3.7 0-8.5-1.3-13.9-4.1Z" fill="#77451F" />
+      <path d="M44.5 12.2c4.5.8 7.1 4.3 5.9 8.4-.8 2.8-3 3.7-5.9 3.1" fill="#6A3C1D" />
+      <path d="M35.7 25.6c1.4 1.4 3.7 1.4 5.1 0M33.7 21.2c1.1-1.1 2.2-1.1 3.3 0M42 21.2c1.1-1.1 2.2-1.1 3.3 0" stroke="#6B331E" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M11.5 39c1.4-8.6-.3-16.8-4.4-24.2" stroke="#B8CC9B" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M11.8 32.4c-6.1-3.4-10-1.2-10-1.2s1.9 6.4 10 5.3M9.6 25.1c-6.5-5-9.2-3.4-9.2-3.4s1.2 6.3 10 6.8M11.5 20.5c1.9-7 6.2-8.8 6.2-8.8s2.5 5.9-5.3 12.2" fill="#B6D494" stroke="#9DBB82" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SafetyOption({ children, label, selected, onClick }: { children: React.ReactNode; label: string; selected: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
       className={cn(
-        "relative flex min-h-[54px] w-full items-center gap-3 rounded-2xl border border-onco-line bg-white px-4 py-3 text-left text-[13.5px] font-semibold text-onco-ink transition",
-        selected && "border-onco-sage bg-onco-sage text-onco-cream",
+        "onco-option-row",
+        selected && "onco-option-row-active",
       )}
       onClick={onClick}
     >
-      <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center border-2", checkbox ? "rounded-md" : "rounded-full", selected ? "border-onco-cream bg-onco-sage" : "border-[#C9CFC8] bg-white")}>
-        {selected ? checkbox ? <CheckIcon className="text-xs text-onco-cream" /> : <span className="h-1.5 w-1.5 rounded-full bg-onco-cream" /> : null}
-      </span>
+      <SafetyFlagIcon label={label} selected={selected} />
       <span className="min-w-0 flex-1 pr-7">{children}</span>
       {selected ? (
+        <span className="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full border border-onco-cream/70 text-[10px] text-onco-cream">
+          <CheckIcon />
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
+function Choice({ children, selected, checkbox, hideIndicator, icon, onClick }: { children: React.ReactNode; selected: boolean; checkbox?: boolean; hideIndicator?: boolean; icon?: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "onco-option-row",
+        selected && "onco-option-row-active",
+      )}
+      onClick={onClick}
+    >
+      {hideIndicator ? null : (
+        <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center border-2", checkbox ? "rounded-md" : "rounded-full", selected ? "border-onco-cream bg-onco-sage" : "border-[#C9CFC8] bg-white")}>
+          {selected ? checkbox ? <CheckIcon className="text-xs text-onco-cream" /> : <span className="h-1.5 w-1.5 rounded-full bg-onco-cream" /> : null}
+        </span>
+      )}
+      {icon ? <span className="shrink-0">{icon}</span> : null}
+      <span className="min-w-0 flex-1 pr-7">{children}</span>
+      {selected && (hideIndicator || checkbox || icon) ? (
         <span className="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full border border-onco-cream/70 text-[10px]">
           <CheckIcon />
         </span>
       ) : null}
     </button>
+  );
+}
+
+function SafetyFlagIcon({ label, selected }: { label: string; selected: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "grid h-8 w-8 shrink-0 place-items-center text-onco-sage",
+        selected ? "opacity-95" : "opacity-100",
+        selected && "text-onco-cream",
+      )}
+    >
+      {label === "Chest pain or pressure" ? <SafetyHeartIcon /> : null}
+      {label === "Severe shortness of breath" ? <SafetyLungsIcon /> : null}
+      {label === "Dizziness or lightheadedness" ? <SafetyDizzyIcon /> : null}
+      {label === "Fever" ? <SafetyFeverIcon /> : null}
+      {label === "New weakness or numbness" ? <SafetyWeaknessIcon /> : null}
+      {label === "Severe diarrhea/dehydration concern" ? <SafetyDropIcon /> : null}
+      {label === "Uncontrolled pain" ? <SafetyLightningIcon /> : null}
+      {label === "None of these" ? <SafetyNoneIcon /> : null}
+    </span>
+  );
+}
+
+function SafetyHeartIcon() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 40 40" fill="none">
+      <path d="M20 32S8 25.4 8 16.7c0-4.6 5.3-7.1 8.9-3.8L20 15.8l3.1-2.9c3.6-3.3 8.9-.8 8.9 3.8C32 25.4 20 32 20 32Z" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 21h7.2l2-4.1 3.2 8.3 3.1-6.3H33" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SafetyLungsIcon() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 40 40" fill="none">
+      <path d="M20 7.5v11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M17.2 8.5h5.6M17.2 12h5.6M17.2 15.5h5.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M20 18.5c-2 1.1-3.2 2.8-3.8 5.1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 18.5c2 1.1 3.2 2.8 3.8 5.1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M16.8 18.4C11.4 19.6 8 25.4 8 32.1c0 2.8 1.8 4.4 4.1 3.4 4.2-1.7 6.1-5.8 6.1-11.8v-4c0-.9-.6-1.5-1.4-1.3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M23.2 18.4C28.6 19.6 32 25.4 32 32.1c0 2.8-1.8 4.4-4.1 3.4-4.2-1.7-6.1-5.8-6.1-11.8v-4c0-.9.6-1.5 1.4-1.3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SafetyDizzyIcon() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 40 40" fill="none">
+      <path d="M23.5 32.5H16c-5 0-8.5-3.8-8.5-8.7v-3.2c0-5.8 4.5-10.4 10.1-10.4h1.8c4.6 0 8.2 3.7 8.2 8.3v1.3l4 5.1h-3.9v3.3c0 2.4-1.8 4.3-4.2 4.3Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M14.2 21.4h.01M21.8 21.4h.01M14.8 26.6c2.4-1.5 5-1.5 7.4 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M10.2 8.2c-1.1-1-2.4-1-3.5 0s-1.1 2.3 0 3.3c1.1 1 2.4 1 3.5 0s1.1-2.3 0-3.3ZM32.7 10.8c-1-.9-2.1-.9-3.1 0s-1 2.1 0 3 2.1.9 3.1 0 1-2.1 0-3Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SafetyFeverIcon() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 40 40" fill="none">
+      <path d="M22 23V9.7a4.5 4.5 0 0 0-9 0V23a8 8 0 1 0 9 0Z" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+      <path d="M17.5 11.5v15" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+      <circle cx="17.5" cy="28.2" r="3.5" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M26.2 12h3M26.2 17h4M26.2 22h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SafetyWeaknessIcon() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 40 40" fill="none">
+      <path d="M10 29c4.8-.5 8.7-2.5 11.4-6.1l3.8-5.1c1-1.3 3.2-.8 3.3.8.2 3.8-1.5 7.4-4.4 9.8L22 30.2c-2.4 2-5.4 3-8.4 3H9.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M11.2 28.8c-1.3-1.8-.8-4.1 1-5.3l6-3.8c1.7-1 3.8.1 3.8 2.1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.2 18.3 6 16.1M12.3 14.1l-1-3M29.3 13.2l2.4-2.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SafetyDropIcon() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 40 40" fill="none">
+      <path d="M20 7s8.2 8.8 8.2 15.1a8.2 8.2 0 0 1-16.4 0C11.8 15.8 20 7 20 7Z" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+      <path d="M8 32c2.2-1.7 4.4-1.7 6.6 0s4.4 1.7 6.6 0 4.4-1.7 6.6 0 4.4 1.7 6.6 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SafetyLightningIcon() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 40 40" fill="none">
+      <path d="M20 7.8c-4.2 1.9-6.4 5.8-5.4 10.5l1.4 6.8c.5 2.6 2.1 4.7 4.4 6 2.2-1.3 3.8-3.4 4.3-6l1.4-6.8C27 13.6 24.2 9.6 20 7.8Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M20 12v17M14 17h12M9 16l-3-2M9 23l-3 1M31 16l3-2M31 23l3 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SafetyNoneIcon() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 40 40" fill="none">
+      <circle cx="20" cy="20" r="13" stroke="currentColor" strokeWidth="1.9" />
+      <path d="m14.3 20.4 3.6 3.6 7.9-8.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
@@ -1837,6 +2250,14 @@ function Summary({ label, text }: { label: string; text: string }) {
   return <div><p className="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-onco-muted-light">{label}</p><p className="text-[12.5px] leading-5 text-[#3A403C]">{text}</p></div>;
 }
 
+function SelectionNote({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mt-4 rounded-2xl border border-onco-sage/15 bg-onco-sage-soft p-4 text-sm leading-6 text-onco-sage">
+      <span className="font-semibold">Noted: </span>{children}
+    </div>
+  );
+}
+
 function toggleList(values: string[], value: string, update: (next: string[]) => void) {
   update(values.includes(value) ? values.filter((item) => item !== value) : [...values, value]);
 }
@@ -1856,35 +2277,49 @@ function toggleBarrier(values: string[], value: string) {
     : [...values.filter((item) => !aliases.includes(item)), value];
 }
 
-function preferenceSupportMessage(selected: string[], currentCapacity: string) {
+function formatSelectionList(items: string[]) {
+  if (items.length === 0) return "";
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+}
+
+function preferenceSupportMessage(selected: string[], feelChips: string[], currentCapacity: string) {
   if (selected.length === 0) return "";
+  const movementText = formatSelectionList(selected.slice(0, 3));
+  const feelText = feelChips.length ? ` It should feel ${formatSelectionList(feelChips.map((item) => item.toLowerCase()))}.` : "";
   if (selected.includes("Gardening") || /garden/i.test(currentCapacity)) {
-    return "You mentioned missing your garden. Gardening absolutely counts - we can build it into your plan.";
+    return `You mentioned ${movementText.toLowerCase()}. Gardening absolutely counts - we can build it into your plan.${feelText}`;
   }
-  if (selected.includes("Walking")) return "Walking is a strong starting point. Artie can keep it short, flat, and easy to adjust.";
-  if (selected.includes("Cycling")) return "Cycling can work well when impact is a concern. Artie can start with gentle, short sessions.";
-  if (selected.includes("Swimming")) return "Swimming can be a low-impact option when your care team says it is safe for treatment and skin healing.";
-  if (selected.includes("Gym")) return "Gym movement can be simple and controlled. Artie can keep the routine light and recovery-focused.";
-  if (selected.includes("At home")) return "At-home movement is a practical backup. Artie can design short sessions that do not depend on travel.";
-  if (selected.includes("Stretching")) return "Stretching is a good gentle option. Artie can use it for easy days and warmups.";
-  return `${selected[0]} can be part of your plan. Artie will start small and adjust around your energy.`;
+  return `${movementText} can be part of your plan. Artie will start small and adjust around your energy.${feelText}`;
 }
 
 function barrierSupportMessage(selected: string[]) {
   if (selected.length === 0) return "";
-  if (selected.includes("Fear of overdoing it")) {
-    return "Fear of overdoing it is common. Artie will start smaller than you think and build up only when it feels safe.";
-  }
-  if (selected.includes("Fatigue")) return "Fatigue matters. Artie can use shorter sessions and more recovery space.";
-  if (selected.includes("Numb feet / neuropathy")) return "Numb feet or neuropathy changes the plan. Artie can prefer flat, steady routes and lower fall-risk options.";
-  if (selected.includes("Need bathrooms nearby")) return "Bathroom access can shape the route. Artie can suggest short loops with easier stops.";
-  if (selected.includes("Nausea")) return "Nausea can make movement harder. Artie can keep sessions gentle and easy to pause.";
-  if (selected.includes("Low motivation")) return "Low motivation is planning information. Artie can make the first step small enough to start.";
-  if (selected.includes("Feeling self-conscious")) return "Feeling self-conscious is understandable. Artie can suggest private or at-home movement options.";
-  if (selected.includes("No safe place to walk")) return "Safety comes first. Artie can look for indoor options or safer short routes.";
-  if (selected.includes("Weather")) return "Weather can change the plan. Artie can keep indoor backups ready.";
-  if (selected.includes("No time")) return "No time means the plan should be smaller. Artie can use short sessions that fit into the day.";
-  return "Artie will design around these barriers so the plan feels realistic, not forced.";
+  const selectedText = formatSelectionList(selected.slice(0, 3)).toLowerCase();
+  const adjustments = [];
+  if (selected.includes("Fatigue")) adjustments.push("shorter sessions");
+  if (selected.includes("Numb feet / neuropathy")) adjustments.push("flat, steady routes");
+  if (selected.includes("Need bathrooms nearby")) adjustments.push("bathroom-friendly loops");
+  if (selected.includes("Fear of overdoing it")) adjustments.push("starts below your limit");
+  if (selected.includes("No safe place to walk") || selected.includes("Weather")) adjustments.push("indoor backups");
+  if (selected.includes("No time")) adjustments.push("smaller sessions");
+  if (selected.includes("Low motivation")) adjustments.push("easy first steps");
+  if (selected.includes("Feeling self-conscious")) adjustments.push("private options");
+  if (selected.includes("Nausea")) adjustments.push("easy-to-pause movement");
+  return `${selectedText} are planning details. Artie will use ${formatSelectionList(adjustments.slice(0, 3)) || "realistic adjustments"} so the plan feels safe and doable.`;
+}
+
+function environmentSupportMessage(environment: Record<string, boolean>) {
+  const selected = environmentOptions.filter((option) => environment[option.key]).map((option) => option.label);
+  if (selected.length === 0) return "";
+  const routeSupports = [];
+  if (environment["Sidewalks nearby"]) routeSupports.push("nearby sidewalks or paths");
+  if (environment["Safe walking area"]) routeSupports.push("safer outdoor routes");
+  if (environment["Bathrooms on route"]) routeSupports.push("bathroom-friendly loops");
+  if (environment["Gym/community center access"]) routeSupports.push("gym or community center options");
+  if (environment["Indoor movement space"]) routeSupports.push("indoor backups");
+  return `${formatSelectionList(selected.slice(0, 3))} will shape the route ideas. Artie can use ${formatSelectionList(routeSupports.slice(0, 3))} when building the plan.`;
 }
 
 function artieResponse(text: string) {

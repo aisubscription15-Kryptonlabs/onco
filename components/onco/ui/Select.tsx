@@ -21,7 +21,7 @@ export function Select<T extends string>({ label, value, options, onChange, clas
       </span>
       <span className="relative block">
         <select
-          className="onco-input min-h-[48px] cursor-pointer appearance-none pr-11 leading-5"
+          className="onco-input min-h-[54px] cursor-pointer appearance-none pr-11 leading-5"
           value={value}
           onChange={(event) => onChange(event.target.value as T)}
         >
