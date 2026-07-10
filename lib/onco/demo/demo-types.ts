@@ -193,6 +193,7 @@ export type ChatMessage = {
   id: string;
   sender: "user" | "artie";
   text: string;
+  patientKey?: string;
 };
 
 export type PatientProfile = {

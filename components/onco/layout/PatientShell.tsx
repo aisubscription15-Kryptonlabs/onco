@@ -17,6 +17,7 @@ type PatientShellProps = {
   className?: string;
   requireRole?: boolean;
   showPatientHeader?: boolean;
+  hidePatientHeader?: boolean;
 };
 
 export function PatientShell({
@@ -27,6 +28,7 @@ export function PatientShell({
   className,
   requireRole = false,
   showPatientHeader = false,
+  hidePatientHeader = false,
 }: PatientShellProps) {
   const router = useRouter();
   const { patientProfile, role } = useDemoStore();
@@ -51,18 +53,18 @@ export function PatientShell({
   return (
     <main
       className={cn(
-        "onco-page flex min-h-ios-screen justify-center",
+        "onco-page ios-patient-page flex justify-center overflow-x-hidden",
         inverted && "bg-onco-sage text-onco-cream",
         className,
       )}
     >
       <div
         className={cn(
-          "min-h-ios-screen w-full max-w-[430px] safe-area-px safe-area-pt",
+          "ios-patient-viewport min-h-ios-screen w-full max-w-[430px] safe-area-px safe-area-pt",
           bottomNav ? "patient-bottom-space" : "safe-area-pb",
         )}
       >
-        {!inverted && (requireRole || showPatientHeader) ? (
+        {!inverted && !hidePatientHeader && (requireRole || showPatientHeader) ? (
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="flex-1">
               <div className="mb-3 rounded-full bg-white/85 px-3 py-2 text-center text-[11px] font-semibold text-onco-muted shadow-onco">

@@ -16,7 +16,15 @@
   body {
     height: 100%;
     min-height: 100%;
+    min-height: 100svh;
+    min-height: 100dvh;
     overflow-x: hidden;
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none;
   }
 
   html {
@@ -35,6 +43,8 @@
     -webkit-overflow-scrolling: touch;
     width: 100%;
     min-height: -webkit-fill-available;
+    min-height: 100svh;
+    min-height: 100dvh;
   }
   .dark body {
     @apply bg-ink-950 text-ink-100;
@@ -100,6 +110,56 @@
     min-height: 100svh;
     min-height: 100dvh;
     overflow-x: hidden;
+    scrollbar-width: none;
+  }
+
+  .onco-page::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ios-patient-page {
+    height: 100vh;
+    height: 100svh;
+    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100svh;
+    min-height: 100dvh;
+    width: 100%;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .ios-patient-page::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ios-patient-viewport {
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+  }
+
+  .ios-patient-viewport img,
+  .ios-patient-viewport svg,
+  .ios-patient-viewport video,
+  .ios-patient-viewport canvas {
+    max-width: 100%;
+  }
+
+  .ios-patient-viewport button,
+  .ios-patient-viewport a {
+    min-width: 0;
+  }
+
+  @supports (-webkit-touch-callout: none) {
+    .ios-patient-page,
+    .ios-patient-viewport {
+      min-height: -webkit-fill-available;
+    }
   }
 
   .onco-page h1,
@@ -163,6 +223,8 @@
     padding-left: max(0.5rem, env(safe-area-inset-left));
     padding-right: max(0.5rem, env(safe-area-inset-right));
     transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
   }
 
   .onco-input {
@@ -687,7 +749,7 @@
   }
 
   .patient-bottom-space {
-    padding-bottom: calc(5.75rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(6.25rem + env(safe-area-inset-bottom));
   }
 
   .ios-sticky-above-nav {
@@ -757,8 +819,9 @@
 }
  
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  display: none;
+  width: 0;
+  height: 0;
 }
 ::-webkit-scrollbar-thumb {
   background: rgb(203 213 225);

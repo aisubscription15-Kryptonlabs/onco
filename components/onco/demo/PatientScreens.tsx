@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PatientShell } from "@/components/onco/layout/PatientShell";
 import { ArtieAvatar } from "@/components/onco/ui/ArtieAvatar";
 import { Badge } from "@/components/onco/ui/Badge";
@@ -16,7 +16,7 @@ import { Select } from "@/components/onco/ui/Select";
 import { Stepper } from "@/components/onco/ui/Stepper";
 import { Tabs } from "@/components/onco/ui/Tabs";
 import { demoStore, useDemoStore } from "@/lib/onco/demo/demo-store";
-import type { ActivityLog, CancerType, ConnectedDevice, TrackingType, TreatmentStatus } from "@/lib/onco/demo/demo-types";
+import type { ActivityLog, CancerType, ConnectedDevice, OnboardingAnswers, PatientPlan, TrackingType, TreatmentStatus } from "@/lib/onco/demo/demo-types";
 import { cn } from "@/lib/utils";
 import { AiAgentIcon, ArrowUpIcon, AwardIcon, CalendarIcon, CheckIcon, ClipboardIcon, ClockIcon, FlameIcon, HeartIcon, MessageIcon, MicIcon, TargetIcon, WalkIcon } from "../ui/icons";
 
@@ -82,11 +82,9 @@ export function OnboardingStateMachine() {
   const state = useDemoStore();
   const [step, setStep] = useState(0);
   const [supportOpen, setSupportOpen] = useState(false);
-  const [wearableOpen, setWearableOpen] = useState(false);
   const [codeOpen, setCodeOpen] = useState(false);
   const [codeInitialStage, setCodeInitialStage] = useState<"entry" | "forgot">("entry");
   const [selfOpen, setSelfOpen] = useState(false);
-  const [pendingDevice, setPendingDevice] = useState<TrackingType>("Apple Health");
   const isCareCodeFlow = state.onboardingMode === "care_code";
   const total = isCareCodeFlow ? 8 : 9;
   const stepNames = isCareCodeFlow ? careCodeSteps : selfStartSteps;
@@ -177,7 +175,7 @@ export function OnboardingStateMachine() {
           {((step === 5 && !isCareCodeFlow) || (step === 4 && isCareCodeFlow)) ? <Barriers /> : null}
           {((step === 6 && !isCareCodeFlow) || (step === 5 && isCareCodeFlow)) ? <Environment /> : null}
           {((step === 7 && !isCareCodeFlow) || (step === 6 && isCareCodeFlow)) ? <Support onAdd={() => setSupportOpen(true)} /> : null}
-          {((step === 8 && !isCareCodeFlow) || (step === 7 && isCareCodeFlow)) ? <GoalTracking onWearable={(device) => { setPendingDevice(device); setWearableOpen(true); }} /> : null}
+          {((step === 8 && !isCareCodeFlow) || (step === 7 && isCareCodeFlow)) ? <GoalTracking /> : null}
           {((step === 9 && !isCareCodeFlow) || (step === 8 && isCareCodeFlow)) ? <ReadyToGenerate /> : null}
         </div>
 
@@ -215,12 +213,6 @@ export function OnboardingStateMachine() {
       <SupportModal open={supportOpen} onClose={() => setSupportOpen(false)} />
       <SelfStartModal open={selfOpen} onClose={() => setSelfOpen(false)} onSuccess={() => setStep(1)} />
       <CareTeamCodeModal initialStage={codeInitialStage} open={codeOpen} onClose={() => setCodeOpen(false)} onSuccess={(nextStep) => setStep(nextStep)} />
-      <Modal open={wearableOpen} title={`Connect ${pendingDevice}`} onClose={() => setWearableOpen(false)}>
-        <p className="text-sm leading-6 text-onco-muted">Review permission and connect activity tracking for this plan.</p>
-        <Button className="mt-4 w-full" onClick={() => { demoStore.connectDevice(pendingDevice); setWearableOpen(false); }}>
-          Connect {pendingDevice}
-        </Button>
-      </Modal>
     </PatientShell>
   );
 }
@@ -391,7 +383,6 @@ function Barriers() {
 
 function Environment() {
   const { onboarding } = useDemoStore();
-  const [showTrailDetails, setShowTrailDetails] = useState(false);
   const trails = trailsForZip(onboarding.environmentZipCode);
   const visibleTrails = trails.slice(0, 2);
   const selectedTrail = visibleTrails.find((trail) => trail.id === onboarding.selectedTrailId) || visibleTrails[0];
@@ -421,39 +412,18 @@ function Environment() {
         <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.05em] text-onco-ink">Zip code for nearby trails</p>
         <div className="relative">
           <input
-            className="onco-input pr-12 font-semibold"
+            className="onco-input font-semibold"
             inputMode="numeric"
             maxLength={5}
             value={onboarding.environmentZipCode}
             onChange={(event) => {
               demoStore.updateOnboarding({ environmentZipCode: event.target.value.replace(/\D/g, "").slice(0, 5) });
-              setShowTrailDetails(false);
             }}
             placeholder="Enter 5-digit zip code"
           />
-          <button
-            aria-label={showTrailDetails ? "Hide nearby trails" : "Show nearby trails"}
-            className="absolute right-3 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full bg-onco-sage-soft text-onco-sage transition disabled:opacity-40"
-            disabled={!hasZip}
-            type="button"
-            onClick={() => setShowTrailDetails((current) => !current)}
-          >
-            <svg
-              aria-hidden="true"
-              className={cn("h-4 w-4 transition-transform", showTrailDetails && "rotate-180")}
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2.5"
-              viewBox="0 0 24 24"
-            >
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </button>
         </div>
       </div>
-      {hasZip && showTrailDetails ? (
+      {hasZip ? (
         <>
       <Card className="mt-4 rounded-[16px] p-4">
         <div className="flex items-start justify-between gap-3">
@@ -515,59 +485,71 @@ function EnvironmentToggleRow({ checked, icon, label, onChange }: { checked: boo
       type="button"
       className={cn(
         "onco-option-row",
-        checked ? "border-onco-sage bg-onco-sage text-onco-cream" : "border-onco-line bg-white text-onco-ink",
+        checked && "onco-option-row-active",
       )}
       onClick={() => onChange(!checked)}
     >
       <EnvironmentOptionIcon name={icon} selected={checked} />
-      <span className="min-w-0 flex-1 pr-7 text-sm leading-4">{label}</span>
+      <span className="min-w-0 flex-1 pr-7 text-left">{label}</span>
       {checked ? (
-        <span className="absolute right-3 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full border border-onco-cream/70 text-[10px] text-onco-cream">
+        <span className="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full border border-onco-cream/70 text-[10px] text-onco-cream">
           <CheckIcon />
         </span>
-      ) : null}
+      ) : (
+        <span className="absolute right-4 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center text-onco-sage/70">
+          <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.3">
+            <path d="m7.5 4.5 5 5.5-5 5.5" />
+          </svg>
+        </span>
+      )}
     </button>
   );
 }
 
 function EnvironmentOptionIcon({ name, selected }: { name: (typeof environmentOptions)[number]["icon"]; selected?: boolean }) {
   return (
-    <span className={cn("onco-option-icon", selected && "text-onco-cream")} aria-hidden="true">
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+    <span
+      aria-hidden="true"
+      className={cn(
+        "grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#EEF4E7] text-[#2D5A4A]",
+        selected && "bg-onco-cream/15 text-onco-cream",
+      )}
+    >
+      <svg viewBox="0 0 44 44" className="h-7 w-7" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
         {name === "path" ? (
           <>
-            <path d="M7 19c2-5 2-9 0-14" />
-            <path d="M17 19c-2-5-2-9 0-14" />
-            <path d="M10 8h4" />
-            <path d="M9 13h6" />
+            <path d="M8 33c6.2-5.8 7.2-13.8 14-17.6 4.2-2.3 8.4-2 13.2-5.8" strokeWidth="2.3" />
+            <path d="M31.5 13.5v16" strokeWidth="1.8" />
+            <circle cx="31.5" cy="11" r="4.5" fill={selected ? "rgba(247,244,237,0.16)" : "#DDE8C8"} strokeWidth="1.6" />
+            <path d="M10 34.5c3.3-1.3 6.3-1.4 9.3-.3M6.5 28.8c2.4-.4 4.5-.2 6.6.7" strokeWidth="1.4" />
           </>
         ) : null}
         {name === "shield" ? (
           <>
-            <path d="M12 3 5 6v5c0 4.2 2.7 7.6 7 10 4.3-2.4 7-5.8 7-10V6l-7-3Z" />
-            <path d="m9 12 2 2 4-5" />
+            <path d="M22 7.5 11.5 11.8v8.4c0 6.3 4.1 11.6 10.5 15.4 6.4-3.8 10.5-9.1 10.5-15.4v-8.4L22 7.5Z" fill={selected ? "rgba(247,244,237,0.12)" : "#DDE8C8"} strokeWidth="2.1" />
+            <path d="m16.6 21.5 3.5 3.4 7.5-8.2" strokeWidth="2.5" />
           </>
         ) : null}
         {name === "bathroom" ? (
           <>
-            <path d="M7 5h10v14H7z" />
-            <path d="M10 9h4" />
-            <path d="M10 13h4" />
+            <path d="M13.5 8.5h17v27h-17z" fill={selected ? "rgba(247,244,237,0.12)" : "#EFF4E6"} strokeWidth="2" />
+            <circle cx="22" cy="15" r="2.2" fill={selected ? "#F7F4ED" : "#7FA05A"} stroke="none" />
+            <path d="M18.5 21h7l1.2 8h-9.4L18.5 21Z" strokeWidth="2" />
+            <path d="M30.5 22h3M16 35.5h17" strokeWidth="1.8" />
           </>
         ) : null}
         {name === "gym" ? (
           <>
-            <path d="M4 10v4" />
-            <path d="M8 8v8" />
-            <path d="M16 8v8" />
-            <path d="M20 10v4" />
-            <path d="M8 12h8" />
+            <path d="M7.5 24h29M10.5 19v10M15 20.5v7M29 20.5v7M33.5 19v10" strokeWidth="2.2" />
+            <path d="M18.5 24h7" strokeWidth="2.4" />
           </>
         ) : null}
         {name === "stairs" ? (
           <>
-            <path d="M5 18h5v-4h4v-4h5" />
-            <path d="M5 22h14" />
+            <path d="M11 18 22 9l11 9" strokeWidth="2" />
+            <path d="M15 18v17h14V18" fill={selected ? "rgba(247,244,237,0.12)" : "#EFF4E6"} strokeWidth="2" />
+            <path d="M17 32h5v-5h5v-5h5" strokeWidth="2.2" />
+            <path d="M12 35h24" strokeWidth="1.8" />
           </>
         ) : null}
       </svg>
@@ -593,19 +575,23 @@ function Support({ onAdd }: { onAdd: () => void }) {
   );
 }
 
-function GoalTracking({ onWearable }: { onWearable: (device: TrackingType) => void }) {
+function GoalTracking() {
+  const router = useRouter();
   const { onboarding } = useDemoStore();
-  const goalOptions = [
+  const standardGoalOptions = [
     "Rebuild stamina for gardening and errands.",
     "Feel less afraid of movement.",
     "Support my long-term health outcomes.",
-    "Write my own...",
   ];
-  const isCustomGoal = !goalOptions.slice(0, 3).includes(onboarding.goalAnchor);
+  const goalOptions = [...standardGoalOptions, "Write my own..."];
+  const goalParts = onboarding.goalAnchor.split(" | ").map((part) => part.trim()).filter(Boolean);
+  const selectedGoals = standardGoalOptions.filter((goal) => goalParts.includes(goal));
+  const customGoal = goalParts.find((goal) => !standardGoalOptions.includes(goal)) || "";
+  const [customGoalOpen, setCustomGoalOpen] = useState(Boolean(customGoal));
 
-  function selectTrackingType(trackingType: TrackingType) {
-    demoStore.updateOnboarding({ trackingType });
-    if (trackingType !== "Manual") onWearable(trackingType);
+  function updateGoalAnchor(nextSelectedGoals: string[], nextCustomGoal = customGoal) {
+    const nextGoals = [...nextSelectedGoals, nextCustomGoal.trim()].filter(Boolean);
+    demoStore.updateOnboarding({ goalAnchor: nextGoals.join(" | ") });
   }
 
   return (
@@ -613,7 +599,7 @@ function GoalTracking({ onWearable }: { onWearable: (device: TrackingType) => vo
       <div className="space-y-2.5">
         {goalOptions.map((goal) => {
           const isOwnOption = goal.includes("own");
-          const isSelected = isOwnOption ? isCustomGoal : onboarding.goalAnchor === goal;
+          const isSelected = isOwnOption ? customGoalOpen || Boolean(customGoal) : selectedGoals.includes(goal);
           if (isOwnOption && isSelected) {
             return (
               <div key={goal}>
@@ -623,8 +609,8 @@ function GoalTracking({ onWearable }: { onWearable: (device: TrackingType) => vo
                   aria-label="Write my own goal"
                   className="onco-input min-h-[112px] resize-y py-4 text-base font-semibold leading-6"
                   placeholder="Tell us what matters most to you..."
-                  value={onboarding.goalAnchor}
-                  onChange={(event) => demoStore.updateOnboarding({ goalAnchor: event.target.value })}
+                  value={customGoal}
+                  onChange={(event) => updateGoalAnchor(selectedGoals, event.target.value)}
                 />
               </div>
             );
@@ -637,7 +623,17 @@ function GoalTracking({ onWearable }: { onWearable: (device: TrackingType) => vo
               )}
               key={goal}
               type="button"
-              onClick={() => demoStore.updateOnboarding({ goalAnchor: isOwnOption ? "" : isSelected ? "" : goal })}
+              onClick={() => {
+                if (isOwnOption) {
+                  setCustomGoalOpen(true);
+                  return;
+                }
+                updateGoalAnchor(
+                  isSelected
+                    ? selectedGoals.filter((selectedGoal) => selectedGoal !== goal)
+                    : [...selectedGoals, goal],
+                );
+              }}
             >
               <GoalAnchorIcon goal={goal} selected={isSelected} />
               <span className="min-w-0 flex-1 pr-7">{goal}</span>
@@ -653,12 +649,14 @@ function GoalTracking({ onWearable }: { onWearable: (device: TrackingType) => vo
 
       <Select
         className="mt-5 block"
-        label="Track automatically? Optional"
+        label="Tracking source"
         value={onboarding.trackingType}
-        onChange={selectTrackingType}
-        options={trackingOptions.map((value) => ({ label: value === "Manual" ? "Manual" : value, value }))}
+        onChange={(trackingType) => {
+          demoStore.updateOnboarding({ trackingType });
+          router.push(`/devices?from=onboarding&source=${encodeURIComponent(trackingType)}`);
+        }}
+        options={trackingOptions.map((value) => ({ label: value, value }))}
       />
-      <Link className="onco-button-outline mt-4 w-full" href="/devices">Manage device connection</Link>
     </ScreenTitle>
   );
 }
@@ -775,7 +773,7 @@ export function SafetyPauseClient() {
         <p className="mt-3 text-sm leading-6">You selected: {onboarding.redFlags.join(", ")}. Please acknowledge this safety pause before viewing your plan.</p>
       </Card>
       <Button className="mt-5 w-full" onClick={() => { demoStore.setSafetyPaused(false); router.push("/plan-reveal"); }}>I understand · show my plan</Button>
-      <Link className="onco-button-outline mt-3 w-full" href="/doctor-summary">Share with my doctor first</Link>
+      <Link className="onco-button-outline mt-3 w-full" href="/doctor-summary" onClick={() => window.sessionStorage.removeItem("doctorSummaryBackTo")}>Share with my doctor first</Link>
     </PatientShell>
   );
 }
@@ -831,7 +829,7 @@ export function PlanRevealClient() {
         </Card>
       ) : null}
       <Link className="onco-button-primary mt-5 w-full" href="/today">Continue to Today</Link>
-      <Link className="onco-button-outline mt-3 w-full" href="/doctor-summary">Share with my doctor first</Link>
+      <Link className="onco-button-outline mt-3 w-full" href="/doctor-summary" onClick={() => window.sessionStorage.removeItem("doctorSummaryBackTo")}>Share with my doctor first</Link>
     </PatientShell>
   );
 }
@@ -902,7 +900,13 @@ export function PrescriptionClient() {
       </Card>
       <Card tone="sage" className="mt-5"><h2 className="onco-display text-3xl font-extrabold">{patientPlan.activity} {patientPlan.minutes} minutes</h2><p className="mt-1 text-sm text-[#C7D8CC]">{patientPlan.daysPerWeek} days/week · {patientPlan.intensity} · {patientPlan.metHours} MET-hrs/wk</p></Card>
       <div className="mt-4 space-y-2">{["Stop for chest pain", "Hydrate", "Use flat steady routes", "Choose bathroom loops"].map((item) => <button className="w-full rounded-2xl border border-onco-line bg-white p-4 text-left text-sm font-semibold" key={item} onClick={() => setOpen(open === item ? null : item)}>{item}{open === item ? <p className="mt-2 text-xs font-normal text-onco-muted">This guidance helps you stay inside your safety boundaries.</p> : null}</button>)}</div>
-      <Link className="onco-button-primary mt-4 w-full" href="/doctor-summary">Generate doctor summary</Link>
+      <Link
+        className="onco-button-primary mt-4 w-full"
+        href="/doctor-summary?from=prescription"
+        onClick={() => window.sessionStorage.setItem("doctorSummaryBackTo", "prescription")}
+      >
+        Generate doctor summary
+      </Link>
       <Button className="mt-3 w-full" variant="outline" onClick={() => demoStore.toast("Doctor review requested")}>Request doctor review</Button>
       <Button className="mt-3 w-full" variant="outline" onClick={() => setHistoryOpen(true)}>View prescription history</Button>
       <Modal open={historyOpen} title="Prescription history" onClose={() => setHistoryOpen(false)}>
@@ -975,27 +979,46 @@ export function SessionFlowClient({ sessionId }: { sessionId: number }) {
   const progress = state.sessionProgress[String(sessionId)] || 0;
   const firstName = state.patientProfile.name?.trim().split(/\s+/)[0] || "there";
   const messages = [`Nice to see you, ${firstName}. What got in the way this week?`, "That is information, not failure. Want to plan around fatigue?", "Great. I will update your goal to protect infusion days.", "Session complete."];
+  function sendTypedAnswer() {
+    if (!typed.trim()) return;
+    setTyped("");
+    demoStore.setSessionProgress(sessionId, progress + 1);
+  }
   return (
     <PatientShell bottomNav={false} requireRole>
-      <h1 className="onco-display text-center text-xl font-extrabold">Session {session.number}: {session.title}</h1>
-      <Stepper className="mt-3" current={Math.min(progress + 1, 5)} total={5} />
-      <div className="mt-6 space-y-3">
-        <ChatBubble sender="artie" text={messages[Math.min(progress, messages.length - 1)]} />
-        {progress < 3 ? (
-          <>
-            <div className="flex flex-wrap gap-2">
+      <div className="flex min-h-ios-compact flex-col">
+        <div>
+          <h1 className="onco-display text-center text-xl font-extrabold">Session {session.number}: {session.title}</h1>
+          <Stepper className="mt-4" current={Math.min(progress + 1, 5)} total={5} />
+        </div>
+        <div className="mt-6 flex-1 space-y-3 pb-4">
+          <ChatBubble sender="artie" text={messages[Math.min(progress, messages.length - 1)]} />
+          {progress < 3 ? (
+            <div className="flex flex-wrap gap-2.5">
               {["Fatigue got in the way", "Bathroom access", "I was worried I would overdo it"].map((reply) => (
                 <Pill key={reply} onClick={() => demoStore.setSessionProgress(sessionId, progress + 1)}>{reply}</Pill>
               ))}
             </div>
-            <div className="flex items-center gap-2 rounded-full border border-onco-line bg-white p-2">
-              <input className="flex-1 bg-transparent px-2 text-sm outline-none" value={typed} onChange={(event) => setTyped(event.target.value)} placeholder="Type an answer..." />
-              <button className="grid h-8 w-8 place-items-center rounded-full text-onco-sage" type="button" onClick={() => setVoiceOpen(true)} aria-label="Use microphone"><MicIcon className="text-lg" /></button>
-              <button className="flex h-8 w-8 items-center justify-center rounded-full bg-onco-ink text-onco-cream" type="button" onClick={() => demoStore.setSessionProgress(sessionId, progress + 1)}><ArrowUpIcon /></button>
+          ) : null}
+        </div>
+        {progress < 3 ? (
+          <div className="sticky bottom-0 z-20 mt-auto bg-onco-paper/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur">
+            <div className="flex min-h-[50px] items-center gap-2 rounded-full border border-onco-line bg-white p-2 shadow-[0_10px_28px_-22px_rgba(30,36,33,0.55)]">
+              <input
+                className="min-w-0 flex-1 bg-transparent px-2 text-[16px] outline-none placeholder:text-[#A9ADA8]"
+                value={typed}
+                onChange={(event) => setTyped(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") sendTypedAnswer();
+                }}
+                placeholder="Type an answer..."
+              />
+              <button className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-onco-sage" type="button" onClick={() => setVoiceOpen(true)} aria-label="Use microphone"><MicIcon className="text-lg" /></button>
+              <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-onco-ink text-onco-cream disabled:opacity-40" type="button" disabled={!typed.trim()} onClick={sendTypedAnswer} aria-label="Send answer"><ArrowUpIcon /></button>
             </div>
-          </>
+          </div>
         ) : (
-          <Button className="w-full" onClick={() => { demoStore.completeSession(sessionId); demoStore.toast(`Session ${sessionId} completed`); router.push("/sessions"); }}>Finish session</Button>
+          <Button className="mb-[max(0.5rem,env(safe-area-inset-bottom))] mt-4 w-full" onClick={() => { demoStore.completeSession(sessionId); demoStore.toast(`Session ${sessionId} completed`); router.push("/sessions"); }}>Finish session</Button>
         )}
       </div>
       <Modal open={voiceOpen} title="Voice input" onClose={() => setVoiceOpen(false)}>
@@ -1100,15 +1123,50 @@ export function ProgressClient() {
   );
 }
 
+type SpeechRecognitionLike = {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  start: () => void;
+  stop: () => void;
+  abort?: () => void;
+  onstart: (() => void) | null;
+  onend: (() => void) | null;
+  onerror: ((event: { error?: string }) => void) | null;
+  onresult: ((event: unknown) => void) | null;
+};
+
 export function ArtieClient() {
   const state = useDemoStore();
   const [input, setInput] = useState("");
   const [voice, setVoice] = useState(false);
+  const [voiceListening, setVoiceListening] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState("");
+  const [voiceError, setVoiceError] = useState("");
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const voiceTranscriptRef = useRef("");
   const firstName = state.patientProfile.name?.trim().split(/\s+/)[0] || "there";
+  const patientChatKey = getPatientChatKey(state);
+  const plainGreetingPattern = /^(hi|hello|hey)$/i;
+  const suggestionChips = buildArtieSuggestionChips(state.onboarding, state.patientPlan);
+  const currentPatientMessages = state.chatMessages.filter((message) => message.patientKey === patientChatKey);
+  const welcomeMessage = `Hi ${firstName}. Ask me anything about your plan, symptoms, or how to make movement fit today.`;
+  const visibleChatMessages = currentPatientMessages.filter((message) => message.text !== welcomeMessage);
   function send(text: string) {
+    const trimmedText = text.trim();
+    if (!trimmedText) return;
+    const greeting = /^(hi|hello|hey)$/i.test(trimmedText);
+    const previousGreetingCount = currentPatientMessages.filter((message) => message.sender === "user" && plainGreetingPattern.test(message.text.trim())).length;
     const safety = /chest pain|dizzy|dizziness|faint|fever|severe shortness of breath/i.test(text);
-    demoStore.addChatMessage({ sender: "user", text });
-    demoStore.addChatMessage({ sender: "artie", text: safety ? "That can be a red flag. Stop activity and contact your care team before continuing." : artieResponse(text) });
+    const response = safety
+      ? "That can be a red flag. Stop activity and contact your care team before continuing."
+      : greeting && previousGreetingCount === 0
+        ? `Hi ${firstName}. I'm here. What would you like help with today?`
+        : greeting
+          ? "Still here. What can I help with?"
+      : artieResponse(trimmedText, firstName, state.onboarding, state.patientPlan);
+    demoStore.addChatMessage({ sender: "user", text: trimmedText, patientKey: patientChatKey });
+    if (response) demoStore.addChatMessage({ sender: "artie", text: response, patientKey: patientChatKey });
     if (safety) {
       demoStore.addNotification({
         type: "safety",
@@ -1119,6 +1177,64 @@ export function ArtieClient() {
     }
     setInput("");
   }
+
+  function startVoiceCapture() {
+    setVoice(true);
+    setVoiceError("");
+    setVoiceTranscript("");
+    voiceTranscriptRef.current = "";
+    const speechWindow = window as typeof window & {
+      SpeechRecognition?: new () => SpeechRecognitionLike;
+      webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+    };
+    const SpeechRecognitionCtor = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) {
+      setVoiceListening(false);
+      setVoiceError("Voice input is not supported in this browser. Try Chrome or Safari with microphone permission enabled.");
+      return;
+    }
+
+    recognitionRef.current?.abort?.();
+    const recognition = new SpeechRecognitionCtor();
+    let spokenText = "";
+    recognition.lang = "en-US";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.onstart = () => setVoiceListening(true);
+    recognition.onerror = (event) => {
+      setVoiceListening(false);
+      setVoiceError(event.error === "not-allowed" ? "Microphone permission was blocked. Please allow microphone access and try again." : "I could not hear that clearly. Please try again.");
+    };
+    recognition.onresult = (event) => {
+      const resultEvent = event as { results: ArrayLike<ArrayLike<{ transcript: string }>> };
+      spokenText = Array.from(resultEvent.results)
+        .map((result) => result[0]?.transcript || "")
+        .join(" ")
+        .trim();
+      voiceTranscriptRef.current = spokenText;
+      setVoiceTranscript(spokenText);
+    };
+    recognition.onend = () => {
+      setVoiceListening(false);
+      recognitionRef.current = null;
+      const finalText = (voiceTranscriptRef.current || spokenText).trim();
+      if (finalText) {
+        setVoice(false);
+        send(finalText);
+        setVoiceTranscript("");
+        voiceTranscriptRef.current = "";
+      } else if (!voiceError) {
+        setVoiceError("I did not catch a message. Please try again.");
+      }
+    };
+    recognitionRef.current = recognition;
+    recognition.start();
+  }
+
+  useEffect(() => () => {
+    recognitionRef.current?.abort?.();
+  }, []);
+
   return (
     <PatientShell activeTab="artie" requireRole>
       <section className="flex min-h-ios-artie flex-col">
@@ -1133,30 +1249,84 @@ export function ArtieClient() {
           </div>
         </header>
         <div className="mt-4 flex flex-wrap gap-2">
-          {["Does gardening count?", "I missed a whole week", "My feet are numb", "Can I swim?"].map((chip) => <Pill key={chip} onClick={() => send(chip)}>{chip}</Pill>)}
+          {suggestionChips.map((chip) => <Pill key={chip} onClick={() => send(chip)}>{chip}</Pill>)}
         </div>
-        <div className="mt-5 flex-1 space-y-3 pb-4">
-          {state.chatMessages.map((message) => (
+        <div className="mt-5 flex-1 space-y-3 pb-2">
+          <ChatBubble sender="artie" text={welcomeMessage} />
+          {visibleChatMessages.map((message) => (
             <ChatBubble key={message.id} sender={message.sender} text={message.text.replace(/^Hi Sam\./, `Hi ${firstName}.`)} />
           ))}
         </div>
-        <div
-          className="sticky z-30 mt-auto rounded-[28px] bg-onco-paper/95 pb-2 pt-2 backdrop-blur"
-          style={{ bottom: "calc(4.75rem + env(safe-area-inset-bottom))" }}
-        >
-          <div className="flex min-h-[50px] items-center gap-2 rounded-full border border-onco-line bg-white p-2 shadow-[0_10px_28px_-22px_rgba(30,36,33,0.55)]">
+        <div className="mt-3 rounded-[28px] bg-onco-paper/95 pb-2 pt-2 backdrop-blur">
+          <div className="flex min-h-[54px] items-center gap-2 rounded-full border border-onco-line bg-white p-2 shadow-[0_12px_30px_-20px_rgba(30,36,33,0.55)]">
             <input
-              className="min-w-0 flex-1 bg-transparent px-2 text-[16px] outline-none placeholder:text-[#A9ADA8]"
+              className="min-w-0 flex-1 bg-transparent px-3 text-[16px] outline-none placeholder:text-[#A9ADA8]"
               value={input}
               onChange={(event) => setInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" || event.shiftKey || !input.trim()) return;
+                event.preventDefault();
+                send(input);
+              }}
               placeholder="Ask anything..."
             />
-            <button className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-onco-ink" type="button" onClick={() => setVoice(true)} aria-label="Use microphone"><MicIcon className="text-lg" /></button>
-            <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-onco-ink text-onco-cream" type="button" onClick={() => input.trim() && send(input)} aria-label="Send message"><ArrowUpIcon /></button>
+            <button
+              className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-full transition", voiceListening ? "bg-onco-sage text-onco-cream" : "bg-onco-sage-soft text-onco-sage hover:bg-onco-sage hover:text-onco-cream")}
+              type="button"
+              onClick={startVoiceCapture}
+              aria-label="Use microphone"
+            >
+              <MicIcon className="text-lg" />
+            </button>
+            <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-onco-ink text-onco-cream" type="button" onClick={() => input.trim() && send(input)} aria-label="Send message"><ArrowUpIcon /></button>
           </div>
         </div>
       </section>
-      <Modal open={voice} title="Voice capture" onClose={() => setVoice(false)}><p className="text-sm text-onco-muted">Use voice to share symptoms or plan questions with Artie.</p><Button className="mt-4" onClick={() => { setVoice(false); send("I feel dizzy"); }}>Use sample voice message</Button></Modal>
+      <Modal
+        open={voice}
+        title="Voice capture"
+        onClose={() => {
+          recognitionRef.current?.abort?.();
+          setVoiceListening(false);
+          setVoice(false);
+        }}
+      >
+        <p className="text-sm text-onco-muted">
+          {voiceListening ? "Recording your message with the system microphone. It will be sent to Artie when you stop." : voiceError || "Tap the microphone and allow access if your browser asks."}
+        </p>
+        {voiceTranscript ? (
+          <Card className="mt-4 text-sm leading-6">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-muted-light">Recorded message</p>
+            <p className="mt-1">{voiceTranscript}</p>
+          </Card>
+        ) : null}
+        {voiceError ? <Button className="mt-4 w-full" onClick={startVoiceCapture}>Try microphone again</Button> : null}
+        {voiceTranscript && !voiceListening ? (
+          <Button
+            className="mt-4 w-full"
+            onClick={() => {
+              const finalText = voiceTranscript.trim();
+              if (!finalText) return;
+              setVoice(false);
+              setVoiceTranscript("");
+              voiceTranscriptRef.current = "";
+              send(finalText);
+            }}
+          >
+            Send recorded message
+          </Button>
+        ) : null}
+        {voiceListening ? (
+          <Button
+            className="mt-4 w-full"
+            onClick={() => {
+              recognitionRef.current?.stop();
+            }}
+          >
+            Stop and send
+          </Button>
+        ) : null}
+      </Modal>
     </PatientShell>
   );
 }
@@ -1188,7 +1358,7 @@ export function LegacyGuidedWalkClient() {
 
 export function GuidedWalkClient() {
   const router = useRouter();
-  const { patientPlan } = useDemoStore();
+  const { patientPlan, patientProfile } = useDemoStore();
   const [seconds, setSeconds] = useState(0);
   const [running, setRunning] = useState(false);
   const [pace, setPace] = useState("Yes easily");
@@ -1203,6 +1373,7 @@ export function GuidedWalkClient() {
   const earned = Number(((2.5 * Math.min(seconds / 60, patientPlan.minutes)) / 60).toFixed(2));
   const stage = seconds < 90 ? "Warm-up" : seconds < Math.max(120, patientPlan.minutes * 45) ? "Main walk" : "Cool-down";
   const steps = Math.round(seconds * 1.35);
+  const firstName = patientProfile.name?.trim().split(/\s+/)[0] || "there";
 
   function complete() {
     demoStore.addActivityLog({ activity: "Walking", duration: Math.max(1, Math.round(seconds / 60)), paceFeel: pace, symptoms: false });
@@ -1210,30 +1381,69 @@ export function GuidedWalkClient() {
   }
 
   return (
-    <PatientShell bottomNav={false} inverted requireRole>
-      <div className="flex min-h-ios-compact flex-col justify-between text-center">
-        <Link className="text-left text-sm text-[#C7D8CC]" href="/today">Close</Link>
+    <PatientShell bottomNav={false} requireRole>
+      <div className="mx-auto flex h-[calc(100dvh-0.75rem)] max-h-[720px] min-h-[620px] w-full max-w-[390px] flex-col rounded-[28px] bg-onco-sage p-3 text-center text-onco-cream shadow-onco-phone">
+        <Link className="self-start rounded-full px-2 py-2 text-xs font-semibold text-[#C7D8CC] hover:text-onco-cream" href="/today">Close</Link>
         <section>
           <Badge tone="cream">Guided walk · {stage}</Badge>
-          <h1 className="onco-display mt-5 text-[64px] font-extrabold">{formatTime(seconds)}</h1>
-          <p className="text-[#A9C5B4]">of {patientPlan.minutes} minutes · {earned} MET dose · {steps} steps</p>
-          <ProgressBar className="mt-5 bg-onco-cream/25" indicatorClassName="bg-onco-sand" value={seconds / 60} max={patientPlan.minutes} />
+          <h1 className="onco-display mt-2 text-[48px] font-extrabold leading-none">{formatTime(seconds)}</h1>
+          <p className="mt-2 text-sm text-[#C7D8CC]">of {patientPlan.minutes} minutes · {earned} MET dose · {steps} steps</p>
+          <div className="mt-3 grid grid-cols-4 gap-2" aria-hidden="true">
+            {[0, 1, 2, 3].map((index) => (
+              <span key={index} className="h-1.5 overflow-hidden rounded-full bg-onco-cream/25">
+                <span className="block h-full rounded-full bg-onco-sand" style={{ width: `${Math.min(100, Math.max(0, ((seconds / 60) / patientPlan.minutes) * 400 - index * 100))}%` }} />
+              </span>
+            ))}
+          </div>
         </section>
-        <section>
-          <Card className="border-none bg-onco-cream/10 text-left text-onco-cream">
-            <p>Talk test: can you talk comfortably?</p>
-            <div className="mt-3 grid grid-cols-3 gap-2">
+        <section className="mt-4 flex flex-1 flex-col pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <Card className="border-none bg-onco-cream/15 p-3 text-left text-onco-cream">
+            <div className="flex gap-3">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#C86B45] text-sm">
+                <WalkIcon />
+              </span>
+              <div>
+                <p className="text-sm font-extrabold leading-5">You're doing great, {firstName}.</p>
+              </div>
+            </div>
+            <div className="mt-2 grid grid-cols-3 gap-2">
               {["Yes easily", "A little breathless", "Struggling"].map((item) => (
-                <Button key={item} variant={pace === item ? "cream" : "outline"} className={pace !== item ? "border-onco-cream/20 text-onco-cream" : ""} onClick={() => setPace(item)}>{item}</Button>
+                <Button
+                  key={item}
+                  variant={pace === item ? "cream" : "outline"}
+                  className={cn(
+                    "min-h-[42px] px-2 text-xs leading-4",
+                    pace !== item && "border-onco-cream/15 bg-onco-cream/10 text-onco-cream hover:bg-onco-cream/15 hover:text-onco-cream",
+                  )}
+                  onClick={() => setPace(item)}
+                >
+                  {item}
+                </Button>
               ))}
             </div>
           </Card>
-          <div className="mt-4 flex gap-3">
+          <div className="mt-2 flex gap-2">
             <Button className="flex-1" variant="cream" onClick={() => setRunning((value) => !value)}>{running ? "Pause" : seconds ? "Resume" : "Start"}</Button>
             <Button className="flex-1 bg-[#F0D9CE] text-[#7A3B1E]" onClick={() => setStopOpen(true)}>I need to stop</Button>
           </div>
-          <Button className="mt-3 w-full" variant="outline" onClick={() => setSeconds(patientPlan.minutes * 60)}>Complete session now</Button>
-          <Button className="mt-3 w-full" variant="outline" onClick={complete}>Complete walk</Button>
+          <div className="mt-2 grid grid-cols-3 gap-2 text-left">
+            <div className="rounded-[14px] bg-onco-cream/15 p-2.5">
+              <p className="text-[10px] font-bold uppercase text-[#C7D8CC]">Steps</p>
+              <p className="onco-display mt-1 text-xl font-extrabold">{steps}</p>
+            </div>
+            <div className="rounded-[14px] bg-onco-cream/15 p-2.5">
+              <p className="text-[10px] font-bold uppercase text-[#C7D8CC]">Pace feel</p>
+              <p className="onco-display mt-1 text-xl font-extrabold">{pace === "Yes easily" ? "Easy" : pace === "A little breathless" ? "Steady" : "Hard"}</p>
+            </div>
+            <div className="rounded-[14px] bg-onco-cream/15 p-2.5">
+              <p className="text-[10px] font-bold uppercase text-[#C7D8CC]">Dose</p>
+              <p className="onco-display mt-1 text-xl font-extrabold">{earned}</p>
+            </div>
+          </div>
+          <div className="mt-auto pt-4">
+            <Button className="w-full border-onco-cream/35 text-onco-cream hover:bg-onco-cream hover:text-onco-ink focus-visible:bg-onco-cream focus-visible:text-onco-ink active:bg-onco-cream active:text-onco-ink" variant="outline" onClick={() => setSeconds(patientPlan.minutes * 60)}>Complete session now</Button>
+            <Button className="mt-3 w-full border-onco-cream/35 text-onco-cream hover:bg-onco-cream hover:text-onco-ink focus-visible:bg-onco-cream focus-visible:text-onco-ink active:bg-onco-cream active:text-onco-ink" variant="outline" onClick={complete}>Complete walk</Button>
+          </div>
         </section>
       </div>
       <Modal open={stopOpen} title="Stop safely" onClose={() => setStopOpen(false)}>
@@ -1252,6 +1462,7 @@ export function GuidedWalkSuccessClient() {
 
 export function DoctorSummaryClient() {
   const state = useDemoStore();
+  const searchParams = useSearchParams();
   const [share, setShare] = useState(false);
   const minutes = state.activityLogs.reduce((sum, log) => sum + log.duration, 0);
   const met = state.activityLogs.reduce((sum, log) => sum + log.metHours, 0);
@@ -1260,10 +1471,22 @@ export function DoctorSummaryClient() {
   const symptoms = state.symptomReports.length ? state.symptomReports.map((item) => `${item.symptom}${item.redFlag ? " (red flag)" : ""}`).join(", ") : "No symptoms reported.";
   const safetyFlags = state.onboarding.redFlags.length ? state.onboarding.redFlags.join(", ") : "No onboarding red flags selected.";
   const summary = `OncoMotionRx summary for ${state.patientProfile.name || "Patient"}. Context: ${state.onboarding.cancerType}, ${state.onboarding.treatmentStatus}. Baseline: ${baselineText} Prescription: ${state.patientPlan.activity} ${state.patientPlan.minutes} min, ${state.patientPlan.daysPerWeek} days/week. Adherence: ${minutes} minutes, ${met.toFixed(2)} MET-hours. Symptoms: ${symptoms}. Safety flags: ${safetyFlags}. Barriers: ${state.onboarding.barriers.join(", ")}. Questions: activity restrictions, neuropathy fall risk, and stop symptoms.`;
+  const [storedBackTo, setStoredBackTo] = useState("");
+  useEffect(() => {
+    if (searchParams.get("from") === "prescription") {
+      window.sessionStorage.setItem("doctorSummaryBackTo", "prescription");
+      setStoredBackTo("prescription");
+      return;
+    }
+    setStoredBackTo(window.sessionStorage.getItem("doctorSummaryBackTo") || "");
+  }, [searchParams]);
+  const fromPrescription = searchParams.get("from") === "prescription" || storedBackTo === "prescription";
+  const backHref = fromPrescription ? "/prescription" : "/onboarding";
+  const backText = fromPrescription ? "Back to prescription" : "Back to start";
   return (
     <PatientShell bottomNav={false} requireRole>
-      <Link className="mb-4 inline-flex text-sm font-semibold text-onco-muted" href="/onboarding">
-        {"<"} Back to start
+      <Link className="mb-4 inline-flex rounded-full bg-onco-sage-soft px-3 py-2 text-sm font-semibold text-onco-sage" href={backHref}>
+        {"<"} {backText}
       </Link>
       <h1 className="onco-display text-[22px] font-extrabold">Doctor summary</h1>
       <Card className="mt-5 space-y-3">
@@ -1275,7 +1498,7 @@ export function DoctorSummaryClient() {
         <Summary label="Phase I target" text={`Progress gradually toward +10 MET-hrs/week above the ${baselineMet || 0} MET-hrs/week baseline.`} />
       </Card>
       <Card className="mt-5 space-y-3"><Summary label="Context" text={`${state.onboarding.cancerType}, ${state.onboarding.treatmentStatus}. Goal: ${state.onboarding.goalAnchor}`} /><Summary label="Current prescription" text={`${state.patientPlan.activity} · ${state.patientPlan.daysPerWeek} days/wk · ${state.patientPlan.minutes} min · ${state.patientPlan.metHours} MET-hrs/wk.`} /><Summary label="Adherence" text={`${minutes} minutes logged · ${met.toFixed(2)} MET-hours earned.`} /><Summary label="Symptoms & barriers" text={state.onboarding.barriers.join(", ")} /><Summary label="Questions for doctor" text="Any activity restrictions? Is neuropathy affecting fall risk? Which symptoms should make me stop and call?" /></Card>
-      <div className="mt-4 grid gap-3"><Button onClick={() => { void navigator.clipboard?.writeText(summary); demoStore.toast("Copied for MyChart"); }}>Copy for MyChart</Button><Button variant="outline" onClick={() => demoStore.toast("PDF export prepared.", "info")}>PDF</Button><Link className="onco-button-outline w-full" href="/onboarding">Back to start page</Link></div>
+      <div className="mt-4 grid gap-3"><Button onClick={() => { void navigator.clipboard?.writeText(summary); demoStore.toast("Copied for MyChart"); }}>Copy for MyChart</Button><Button variant="outline" onClick={() => demoStore.toast("PDF export prepared.", "info")}>PDF</Button><Link className="onco-button-outline w-full" href={backHref}>{backText}</Link></div>
       <Modal open={share} title="Share summary" onClose={() => setShare(false)}><p className="text-sm text-onco-muted">Send this summary to your care team for plan review.</p><Button className="mt-4" onClick={() => { demoStore.sharePatientDetailsWithDoctor(); setShare(false); }}>Send to doctor for review</Button></Modal>
     </PatientShell>
   );
@@ -1370,7 +1593,7 @@ function CareTeamCodeModal({ initialStage = "entry", open, onClose, onSuccess }:
   const [verify, setVerify] = useState("");
   const [stage, setStage] = useState<"entry" | "invite" | "confirm" | "updateChoice" | "forgot" | "otp" | "recovered">("entry");
   const [recoveryEmail, setRecoveryEmail] = useState("");
-  const [otp, setOtp] = useState("");
+  const [otp, setOtp] = useState("1234");
   const [recoveredCode, setRecoveredCode] = useState("");
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [error, setError] = useState("");
@@ -1397,7 +1620,7 @@ function CareTeamCodeModal({ initialStage = "entry", open, onClose, onSuccess }:
     }
     if (initialStage === "forgot") {
       setRecoveryEmail("");
-      setOtp("");
+      setOtp("1234");
       setRecoveredCode("");
     }
   }, [initialStage, open]);
@@ -1410,7 +1633,7 @@ function CareTeamCodeModal({ initialStage = "entry", open, onClose, onSuccess }:
   function closeAndReset() {
     setStage("entry");
     setError("");
-    setOtp("");
+    setOtp("1234");
     setRecoveryBusy(false);
     onClose();
   }
@@ -1425,7 +1648,7 @@ function CareTeamCodeModal({ initialStage = "entry", open, onClose, onSuccess }:
         return;
       }
       setRecoveredCode(foundCode);
-      setOtp("");
+      setOtp("1234");
       demoStore.toast("Verification code sent.", "info");
       setStage("otp");
     } finally {
@@ -1476,7 +1699,7 @@ function CareTeamCodeModal({ initialStage = "entry", open, onClose, onSuccess }:
             onClick={() => {
               setError("");
               setRecoveryEmail("");
-              setOtp("");
+              setOtp("1234");
               setRecoveredCode("");
               setStage("forgot");
             }}
@@ -1650,38 +1873,51 @@ export function ProfileClient() {
 
 export function DevicesClient() {
   const state = useDemoStore();
-  return <DeviceConnectivityContent state={state} />;
+  const searchParams = useSearchParams();
+  const fromOnboarding = searchParams.get("from") === "onboarding";
+  const sourceParam = searchParams.get("source");
+  const requestedSource = trackingOptions.find((option) => option === sourceParam);
+  return <DeviceConnectivityContent fromOnboarding={fromOnboarding} requestedSource={requestedSource} state={state} />;
 }
 
-function DeviceConnectivityContent({ state }: { state: ReturnType<typeof useDemoStore> }) {
+function DeviceConnectivityContent({ fromOnboarding, requestedSource, state }: { fromOnboarding?: boolean; requestedSource?: TrackingType; state: ReturnType<typeof useDemoStore> }) {
   const router = useRouter();
   const [selectedDevice, setSelectedDevice] = useState<ConnectedDevice | null>(null);
+  const [handledSource, setHandledSource] = useState<TrackingType | null>(null);
   const [autoSync, setAutoSync] = useState(true);
   const [shareDose, setShareDose] = useState(true);
   const connected = state.connectedDevices.filter((device) => device.connected);
   const activeSource = connected.find((device) => device.name === state.onboarding.trackingType) || connected[0] || state.connectedDevices.find((device) => device.name === "Manual");
   const latestLog = state.activityLogs[0];
 
+  useEffect(() => {
+    if (!requestedSource || handledSource === requestedSource) return;
+    const requestedDevice = state.connectedDevices.find((device) => device.name === requestedSource);
+    if (!requestedDevice) return;
+    setSelectedDevice(requestedDevice);
+    setHandledSource(requestedSource);
+  }, [handledSource, requestedSource, state.connectedDevices]);
+
   function connectAndClose(device: ConnectedDevice) {
     demoStore.connectDevice(device.name);
     setSelectedDevice(null);
-    router.push("/onboarding?step=tracking");
+    if (fromOnboarding) router.push("/onboarding?step=tracking");
   }
 
   function syncAndClose(device: ConnectedDevice) {
     demoStore.syncDevice(device.name);
     setSelectedDevice(null);
-    router.push("/onboarding?step=tracking");
+    if (fromOnboarding) router.push("/onboarding?step=tracking");
   }
 
   function useManualAndReturn() {
     demoStore.connectDevice("Manual");
     setSelectedDevice(null);
-    router.push("/onboarding?step=tracking");
+    if (fromOnboarding) router.push("/onboarding?step=tracking");
   }
 
   return (
-    <PatientShell requireRole>
+    <PatientShell bottomNav={!fromOnboarding} hidePatientHeader={fromOnboarding} requireRole>
       <h1 className="onco-display text-[28px] font-extrabold">Connected devices</h1>
       <p className="mt-1 text-sm leading-6 text-onco-muted">Choose how OncoMotionRx reads activity for your weekly movement plan.</p>
       <Card tone="sage" className="mt-5">
@@ -1713,7 +1949,7 @@ function DeviceConnectivityContent({ state }: { state: ReturnType<typeof useDemo
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold">{device.name}</p>
-                  <p className="mt-1 text-xs leading-5 text-onco-muted">{device.connected ? `Connected · last sync ${device.lastSync || "not yet"}` : device.name === "Manual" ? "Enter activity yourself" : "Not connected"}</p>
+                  <p className="mt-1 text-xs leading-5 text-onco-muted">{device.connected ? `Connected · last sync ${device.lastSync || "not yet"}` : "Not connected"}</p>
                 </div>
               </div>
               <Badge tone={device.connected ? "sage" : "sand"}>{device.connected ? "On" : "Off"}</Badge>
@@ -1725,6 +1961,11 @@ function DeviceConnectivityContent({ state }: { state: ReturnType<typeof useDemo
           </Card>
         ))}
       </div>
+      {fromOnboarding ? (
+        <Button className="mt-5 w-full" onClick={() => router.push("/onboarding?step=tracking")}>
+          Back
+        </Button>
+      ) : null}
       <Modal open={Boolean(selectedDevice)} title={selectedDevice ? `Connect ${selectedDevice.name}` : "Connect device"} onClose={() => setSelectedDevice(null)}>
         {selectedDevice ? (
           <>
@@ -2252,7 +2493,7 @@ function ActivityTable({ logs }: { logs: ActivityLog[] }) {
 }
 
 function Summary({ label, text }: { label: string; text: string }) {
-  return <div><p className="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-onco-muted-light">{label}</p><p className="text-[12.5px] leading-5 text-[#3A403C]">{text}</p></div>;
+  return <div className="p-1"><p className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-onco-ink">{label}</p><p className="mt-1 text-[12.5px] leading-5 text-[#3A403C]">{text}</p></div>;
 }
 
 function SelectionNote({ children }: { children: React.ReactNode }) {
@@ -2327,12 +2568,66 @@ function environmentSupportMessage(environment: Record<string, boolean>) {
   return `${formatSelectionList(selected.slice(0, 3))} will shape the route ideas. Artie can use ${formatSelectionList(routeSupports.slice(0, 3))} when building the plan.`;
 }
 
-function artieResponse(text: string) {
-  if (/gardening/i.test(text)) return "Yes. Light gardening counts, especially if it is paced and safe. I can include it as recovery movement.";
-  if (/missed/i.test(text)) return "Missing a week is data, not failure. Restart with one short session and rebuild gently.";
-  if (/feet|numb|neuropathy/i.test(text)) return "Choose flat, steady routes, supportive shoes, and avoid uneven ground. Stop if numbness changes suddenly.";
-  if (/swim/i.test(text)) return "Swimming can count if your care team has cleared it and your port/wounds are safe.";
-  return "I can help you adjust the plan while staying inside your safety boundaries.";
+function buildArtieSuggestionChips(onboarding: OnboardingAnswers, plan: PatientPlan) {
+  const chips: string[] = [];
+  const add = (chip: string) => {
+    if (!chips.includes(chip)) chips.push(chip);
+  };
+
+  if (onboarding.barriers.includes("Fatigue")) add("What if fatigue gets in the way?");
+  if (onboarding.barriers.includes("Numb feet / neuropathy") || onboarding.redFlags.some((flag) => /numb/i.test(flag))) add("My feet are numb");
+  if (onboarding.barriers.includes("Need bathrooms nearby") || onboarding.environment["Bathrooms on route"]) add("Can I choose a bathroom route?");
+  if (onboarding.barriers.includes("Fear of overdoing it")) add("How do I know I am not overdoing it?");
+  if (onboarding.barriers.includes("No safe place to walk") || onboarding.environment["Safe walking area"] === false) add("What if walking outside does not feel safe?");
+  if (onboarding.barriers.includes("Weather")) add("What can I do when weather is bad?");
+  if (onboarding.barriers.includes("Low motivation")) add("Help me restart today");
+  if (onboarding.preferences.includes("Gardening") || plan.activity === "Gardening") add("Does gardening count?");
+  if (onboarding.preferences.includes("Swimming") || plan.activity === "Swimming") add("Can I swim?");
+  if (onboarding.preferences.includes("Cycling") || plan.activity === "Cycling") add("Can I bike instead?");
+  if (onboarding.environment["Indoor movement space"] || onboarding.preferences.includes("At home")) add("Can I do this indoors?");
+  add(`Why ${plan.minutes} minutes?`);
+  add("Can I split the session?");
+
+  return chips.slice(0, 4);
+}
+
+function getPatientChatKey(state: ReturnType<typeof useDemoStore>) {
+  return (
+    state.patientProfile.careTeamCode
+    || state.generatedCareCode
+    || state.careCode
+    || state.patientProfile.email
+    || state.patientIdentity?.contact
+    || state.patientProfile.name
+    || state.patientIdentity?.firstName
+    || "current-patient"
+  ).trim().toLowerCase();
+}
+
+function artieResponse(text: string, firstName = "there", onboarding?: OnboardingAnswers, plan?: PatientPlan) {
+  const hasBarrier = (barrier: string) => onboarding?.barriers.includes(barrier) ?? false;
+  const hasPreference = (preference: string) => onboarding?.preferences.includes(preference) ?? false;
+  const currentPlan = plan ? `${plan.activity.toLowerCase()} ${plan.minutes} minutes` : "your current plan";
+  if (/^(hi|hello|hey)$/i.test(text.trim())) return `Hi ${firstName}. What would you like help with today - your plan, symptoms, or making movement easier?`;
+  if (/gardening/i.test(text)) return hasPreference("Gardening") || plan?.activity === "Gardening" ? `Yes. Gardening fits your profile, so keep it gentle and count it toward ${currentPlan} when it feels easy-to-moderate.` : "Yes. Light gardening can count if it is paced and safe. Start with short, easy tasks and stop if symptoms change.";
+  if (/missed|restart/i.test(text)) return hasBarrier("Low motivation") ? "A missed week is information, not failure. Restart today with one tiny version of the plan, even 3-5 minutes, then rebuild gently." : "Missing a week is data, not failure. Restart with one short session and rebuild gently.";
+  if (/feet|numb|neuropathy/i.test(text)) return "Because numb feet can affect balance, choose flat steady routes, supportive shoes, and avoid uneven ground. If numbness is new or suddenly worse, pause and contact your care team.";
+  if (/swim/i.test(text)) return hasPreference("Swimming") || plan?.activity === "Swimming" ? "Swimming matches what you selected. Count it only if your care team has cleared water activity and any port, wound, or skin concerns are safe." : "Swimming can count if your care team has cleared it and your port, wounds, and skin are safe.";
+  if (/bike|cycling/i.test(text)) return "Biking can count if it feels steady and safe. Keep the pace easy, avoid high-traffic routes, and use a stationary bike if balance or weather is a concern.";
+  if (/fatigue/i.test(text)) return "Use the low-energy version: shorten the session, move at an easy pace, and stop before you feel drained. Consistency matters more than pushing.";
+  if (/bathroom/i.test(text)) return "Yes. Since bathroom access matters, choose a short loop with a nearby restroom or an indoor backup where you can stop quickly.";
+  if (/overdoing/i.test(text)) return "Use the talk test: you should be able to talk in short sentences. Chest pain, dizziness, fever, or severe shortness of breath means stop and contact your care team.";
+  if (/outside|safe/i.test(text)) return "Use an indoor option instead: hallway laps, gentle marching, or a gym/community center if available. The plan should fit your safety, not fight it.";
+  if (/weather/i.test(text)) return "Move the plan indoors on bad-weather days. A short indoor walk or gentle at-home movement can still count.";
+  if (/indoors/i.test(text)) return "Yes. Indoor movement counts. Use hallway laps, light standing movement, or a short home route and keep the same easy-to-moderate effort.";
+  if (/why .*minutes|minutes/i.test(text)) return plan ? `${plan.minutes} minutes is based on your baseline, barriers, and selected supports. It is meant to feel doable first, then build gradually.` : "The minutes are meant to start below your limit, then build gradually as your body gives feedback.";
+  if (/split/i.test(text)) return plan ? `Yes. You can split ${plan.minutes} minutes into smaller pieces, like two short sessions, if that fits fatigue or schedule better.` : "Yes. Splitting a session into smaller pieces still counts when it helps you stay consistent.";
+  if (plan && onboarding) {
+    const barrierText = onboarding.barriers.length ? ` I will keep ${formatSelectionList(onboarding.barriers.slice(0, 2).map((item) => item.toLowerCase()))} in mind.` : "";
+    const adaptationText = plan.adaptations.length ? ` Your plan already includes ${formatSelectionList(plan.adaptations.slice(0, 2).map((item) => item.toLowerCase()))}.` : "";
+    return `I hear you. For your current ${currentPlan} plan, keep it easy-to-moderate and adjust based on how your body feels today.${barrierText}${adaptationText}`;
+  }
+  return "I hear you. Keep the movement easy-to-moderate, start smaller if needed, and stop if anything feels unsafe.";
 }
 
 function formatTime(seconds: number) {

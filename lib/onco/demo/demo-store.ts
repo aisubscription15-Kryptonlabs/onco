@@ -128,6 +128,19 @@ function patientProfileWithIdentityContact(current: DemoState) {
   };
 }
 
+function currentPatientChatKey(current: DemoState) {
+  return (
+    current.patientProfile.careTeamCode
+    || current.generatedCareCode
+    || current.careCode
+    || current.patientProfile.email
+    || current.patientIdentity?.contact
+    || current.patientProfile.name
+    || current.patientIdentity?.firstName
+    || "current-patient"
+  ).trim().toLowerCase();
+}
+
 function syncCareCodeSnapshot(current: DemoState) {
   const code = activeCareCode(current);
   if (!code || code === "SAM-GVOC-7429") return current.acceptedCareCodes;
@@ -350,8 +363,11 @@ export const demoStore = {
     const first = (state.patientIdentity?.firstName || state.patientProfile.name || "SAM").trim().split(/\s+/)[0] || "SAM";
     const prefix = first.slice(0, 3).toUpperCase().replace(/[^A-Z]/g, "") || "SAM";
     const clinicCode = (state.site.id || "GVOC").toUpperCase().replace(/[^A-Z0-9]/g, "") || "GVOC";
-    const digits = String(Math.floor(1000 + Math.random() * 9000));
-    const generatedCareCode = `${prefix}-${clinicCode}-${digits}`;
+    let generatedCareCode = "";
+    do {
+      const digits = String(Math.floor(1000 + Math.random() * 9000));
+      generatedCareCode = `${prefix}-${clinicCode}-${digits}`;
+    } while (state.acceptedCareCodes.some((item) => item.code === generatedCareCode));
     setState((current) => ({
       ...current,
       generatedCareCode,
@@ -367,7 +383,7 @@ export const demoStore = {
           sessionProgress: { ...current.sessionProgress },
           createdAt: nowLabel(),
         },
-        ...current.acceptedCareCodes.filter((item) => item.code !== generatedCareCode),
+        ...current.acceptedCareCodes.filter((item) => item.code !== generatedCareCode && item.code !== current.generatedCareCode),
       ],
       completedOnboarding: true,
       toast: { id: Date.now(), message: "Care Code generated", tone: "success" },
@@ -452,11 +468,7 @@ export const demoStore = {
     const generatedMatch = state.acceptedCareCodes.find((item) => item.code.toUpperCase() === normalized);
     const currentGeneratedMatches = state.generatedCareCode?.toUpperCase() === normalized;
     const generatedPattern = normalized.match(/^([A-Z]{2,})-([A-Z0-9]+)-(\d{4})$/);
-    const generatedPatternMatches = Boolean(
-      generatedPattern &&
-      generatedPattern[2] === state.site.id.toUpperCase() &&
-      normalized !== "SAM-GVOC-7429",
-    );
+    const generatedPatternMatches = Boolean(currentGeneratedMatches && generatedPattern);
     const fallbackName = generatedPattern?.[1]?.toLowerCase() || "patient";
     const fallbackContact = state.generatedCareCode?.toUpperCase() === normalized && state.patientIdentity?.contact.includes("@")
       ? state.patientIdentity.contact
@@ -806,26 +818,57 @@ export const demoStore = {
   generatePatientPlan() {
     const answers = state.onboarding;
     const adaptations: string[] = [];
-    if (answers.barriers.includes("Fatigue")) adaptations.push("short sessions");
-    if (answers.barriers.includes("Bathroom access") || answers.barriers.includes("Need bathrooms nearby")) adaptations.push("short loops near home");
-    if (answers.barriers.includes("Neuropathy") || answers.barriers.includes("Numb feet / neuropathy")) adaptations.push("flat steady routes");
-    if (answers.barriers.includes("Fear of overdoing it")) adaptations.push("starts below your limit");
-    if (answers.preferences.includes("Gardening")) adaptations.push("gardening counts");
-    if (estimateBaselineMetHours(answers) > 0) adaptations.push("baseline measured");
-    const activity: PatientPlan["activity"] = answers.preferences.includes("Gardening") ? "Gardening" : "Walking";
-    const met = activity === "Gardening" ? 2.3 : 2.5;
-    const minutes = answers.barriers.includes("Fatigue") ? 8 : 10;
-    const metHours = Number(((met * minutes * 3) / 60).toFixed(2));
+    const addAdaptation = (item: string) => {
+      if (!adaptations.includes(item)) adaptations.push(item);
+    };
+    const hasBarrier = (...values: string[]) => values.some((value) => answers.barriers.includes(value));
+    const hasPreference = (...values: string[]) => values.some((value) => answers.preferences.includes(value));
+    const baseline = estimateBaselineMetHours(answers);
+    const environment = answers.environment;
+
+    if (hasBarrier("Fatigue", "Nausea")) addAdaptation("short sessions");
+    if (hasBarrier("Bathroom access", "Need bathrooms nearby") || environment["Bathrooms on route"]) addAdaptation("bathroom-friendly route");
+    if (hasBarrier("Neuropathy", "Numb feet / neuropathy")) addAdaptation("flat steady routes");
+    if (hasBarrier("Fear of overdoing it")) addAdaptation("starts below your limit");
+    if (hasBarrier("No safe place to walk") || !environment["Safe walking area"]) addAdaptation("indoor backup");
+    if (hasBarrier("No time")) addAdaptation("small time blocks");
+    if (hasBarrier("Low motivation")) addAdaptation("easy first step");
+    if (hasBarrier("Feeling self-conscious")) addAdaptation("private options");
+    if (environment["Sidewalks nearby"]) addAdaptation("nearby sidewalks");
+    if (environment["Gym/community center access"]) addAdaptation("gym option available");
+    if (environment["Indoor movement space"]) addAdaptation("home movement option");
+    if (answers.selectedTrailId) addAdaptation("route selected");
+    if (baseline > 0) addAdaptation("baseline measured");
+
+    const activity: PatientPlan["activity"] = hasPreference("Gardening")
+      ? "Gardening"
+      : hasPreference("Cycling")
+        ? "Cycling"
+        : hasPreference("Swimming")
+          ? "Swimming"
+          : hasPreference("Gym")
+            ? "Strength"
+            : "Walking";
+    if (activity === "Gardening") addAdaptation("gardening counts");
+    if (activity === "Strength") addAdaptation("community-center friendly");
+    if (hasPreference("At home", "Stretching")) addAdaptation("home-friendly plan");
+
+    const met = activity === "Gardening" ? 2.3 : activity === "Cycling" ? 4 : activity === "Swimming" ? 4.5 : activity === "Strength" ? 3.5 : 2.5;
+    const minutes = hasBarrier("No time") ? 6 : hasBarrier("Fatigue", "Nausea", "Fear of overdoing it") ? 8 : baseline >= 6 ? 12 : 10;
+    const daysPerWeek = hasBarrier("Fatigue", "Nausea") ? 3 : baseline >= 6 && !hasBarrier("No time") ? 4 : 3;
+    const intensity: PatientPlan["intensity"] = baseline >= 6 && !hasBarrier("Fear of overdoing it") ? "Moderate" : baseline > 0 ? "Easy-to-moderate" : "Easy";
+    if (adaptations.length === 0) addAdaptation("starts gently");
+    const metHours = Number(((met * minutes * daysPerWeek) / 60).toFixed(2));
     setState((current) => {
       const next: DemoState = {
         ...current,
         patientPlan: {
-        activity,
-        minutes,
-        daysPerWeek: 3,
-        intensity: "Easy-to-moderate",
-        metHours,
-        adaptations,
+          activity,
+          minutes,
+          daysPerWeek,
+          intensity,
+          metHours,
+          adaptations,
         },
         safetyPaused: answers.redFlags.length > 0,
       };
@@ -902,7 +945,9 @@ export const demoStore = {
       ...current,
       onboarding: { ...current.onboarding, trackingType: deviceName },
       connectedDevices: current.connectedDevices.map((device) =>
-        device.name === deviceName ? { ...device, connected: true, lastSync: device.lastSync || "Connected just now" } : device,
+        device.name === deviceName
+          ? { ...device, connected: true, lastSync: device.lastSync || "Connected just now" }
+          : { ...device, connected: false, lastSync: null },
       ),
       notifications: [
         notification("device", `${deviceName} connected`, "Automatic activity detection is simulated in this demo."),
@@ -935,8 +980,11 @@ export const demoStore = {
       const nextLogs = [entry, ...current.activityLogs];
       return {
         ...current,
+        onboarding: { ...current.onboarding, trackingType: deviceName },
         connectedDevices: current.connectedDevices.map((device) =>
-          device.name === deviceName ? { ...device, connected: true, lastSync: sample } : device,
+          device.name === deviceName
+            ? { ...device, connected: true, lastSync: sample }
+            : { ...device, connected: false, lastSync: null },
         ),
         activityLogs: nextLogs,
         acceptedCareCodes: current.acceptedCareCodes.map((item) =>
@@ -973,7 +1021,7 @@ export const demoStore = {
     }));
   },
   addChatMessage(message: Omit<ChatMessage, "id">) {
-    const entry: ChatMessage = { ...message, id: `chat-${Date.now()}-${message.sender}` };
+    const entry: ChatMessage = { ...message, patientKey: message.patientKey || currentPatientChatKey(state), id: `chat-${Date.now()}-${message.sender}` };
     setState((current) => ({ ...current, chatMessages: [...current.chatMessages, entry] }));
   },
   completeSession(sessionId: number) {
