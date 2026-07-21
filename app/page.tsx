@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -6,161 +6,243 @@ import { loginDemo } from "@/lib/onco/demo/demo-auth";
 import { demoStore, useDemoStore } from "@/lib/onco/demo/demo-store";
 import type { DemoRole } from "@/lib/onco/demo/demo-types";
 import { Button } from "@/components/onco/ui/Button";
-import { Card } from "@/components/onco/ui/Card";
-import { WalkIcon } from "@/components/onco/ui/icons";
-import { Select } from "@/components/onco/ui/Select";
+import { CareTeamCodeModal, SelfStartModal } from "@/components/onco/demo/PatientScreens";
+import { ChevronRightIcon, HomeIcon } from "@/components/onco/ui/icons";
 import { cn } from "@/lib/utils";
 
-const chips = ["Patient-started", "Doctor-shareable", "MET tracking", "Artie-guided"];
+type LandingRole = Extract<DemoRole, "doctor" | "admin" | "app-provider">;
 
-type LandingRole = Extract<DemoRole, "patient" | "doctor" | "admin" | "app-provider">;
-
-const accessCards = [
-  {
-    role: "patient",
-    short: "PT",
-    title: "Patient",
-    body: "Start on your own or continue with a care code.",
-  },
+const roleCards = [
   {
     role: "doctor",
-    short: "DR",
-    title: "Doctor / Care Team",
-    body: "Sign in with email and password to review patients, alerts, prescriptions, and summaries.",
+    title: "Doctor",
+    body: "Access and manage patient programs",
+    icon: "doctor",
   },
   {
     role: "admin",
-    short: "AD",
-    title: "Site Admin",
-    body: "Sign in to manage site operations, teams, programs, and reports.",
+    title: "Admin",
+    body: "Manage organization and staff",
+    icon: "admin",
   },
   {
     role: "app-provider",
-    short: "AP",
-    title: "App Provider",
-    body: "Sign in to oversee sites, platform usage, prompts, and audit logs.",
+    title: "App provider",
+    body: "Guide and support patients",
+    icon: "provider",
   },
 ] satisfies Array<{
   role: LandingRole;
-  short: string;
   title: string;
   body: string;
+  icon: "doctor" | "admin" | "provider";
 }>;
 
+function StaffRoleIcon({ icon }: { icon: "doctor" | "admin" | "provider" }) {
+  if (icon === "doctor") {
+    return (
+      <svg aria-hidden="true" className="h-8 w-8" fill="none" viewBox="0 0 32 32">
+        <path d="M11 5v7a5 5 0 0 0 10 0V5" stroke="currentColor" strokeLinecap="round" strokeWidth="2.3" />
+        <path d="M11 5H8M21 5h3" stroke="currentColor" strokeLinecap="round" strokeWidth="2.3" />
+        <path d="M16 17v3a6 6 0 0 0 12 0v-1" stroke="currentColor" strokeLinecap="round" strokeWidth="2.3" />
+        <circle cx="28" cy="18" r="2.3" stroke="currentColor" strokeWidth="2.3" />
+      </svg>
+    );
+  }
+  if (icon === "admin") {
+    return (
+      <svg aria-hidden="true" className="h-8 w-8" fill="none" viewBox="0 0 32 32">
+        <path d="M8 27V10h16v17" stroke="currentColor" strokeLinejoin="round" strokeWidth="2.3" />
+        <path d="M13 10V6h6v4M12 15h2M18 15h2M12 20h2M18 20h2M5 27h22" stroke="currentColor" strokeLinecap="round" strokeWidth="2.3" />
+      </svg>
+    );
+  }
+  return <HomeIcon className="h-8 w-8" />;
+}
+
+
+function LandingHeroImage() {
+  return (
+    <div className="relative mt-6 overflow-hidden rounded-[18px] bg-[#F2EADC] shadow-[0_10px_24px_-20px_rgba(30,58,45,0.38)]">
+      <img
+        alt=""
+        className="block aspect-[2.08/1] w-full object-cover"
+        src="/onco/landing-hero.png"
+      />
+    </div>
+  );
+}
 export default function DemoLandingPage() {
   const router = useRouter();
   const { users } = useDemoStore();
-  const [selectedRole, setSelectedRole] = useState<LandingRole>("patient");
-  const [email, setEmail] = useState("demo@oncomotionrx.example");
-  const [password, setPassword] = useState("recovery");
-  const selectedCard = accessCards.find((card) => card.role === selectedRole) || accessCards[0];
-  const staffUsers = useMemo(
-    () => users.filter((user) => user.role === selectedRole),
-    [selectedRole, users],
-  );
-  const [userId, setUserId] = useState("");
-  const selectedUser = users.find((user) => user.id === userId && user.role === selectedRole) || staffUsers[0];
+  const [roleSheetOpen, setRoleSheetOpen] = useState(false);
+  const [careCodeOpen, setCareCodeOpen] = useState(false);
+  const [careCodeStage, setCareCodeStage] = useState<"entry" | "forgot">("entry");
+  const [selfStartOpen, setSelfStartOpen] = useState(false);
+  const staffUsers = useMemo(() => users.filter((user) => user.role !== "patient"), [users]);
 
-  function selectRole(role: LandingRole) {
-    setSelectedRole(role);
-    const nextUser = users.find((user) => user.role === role);
-    setUserId(nextUser?.id || "");
-  }
-
-  function startPatientProgram() {
+  function openCareCode() {
     demoStore.preparePatientProgram();
-    router.push("/onboarding");
+    demoStore.beginCareCode();
+    setCareCodeStage("entry");
+    setCareCodeOpen(true);
   }
 
-  function signInStaff() {
+  function openForgotCode() {
+    demoStore.preparePatientProgram();
+    demoStore.beginCareCode();
+    setCareCodeStage("forgot");
+    setCareCodeOpen(true);
+  }
+
+  function startOnOwn() {
+    demoStore.preparePatientProgram();
+    demoStore.beginSelfStart();
+    setSelfStartOpen(true);
+  }
+
+  function continueToOnboarding(step: number) {
+    window.sessionStorage.setItem("oncoContinueOnboarding", "1");
+    router.push(`/onboarding?step=${step}`);
+  }
+
+
+  function signInRole(role: LandingRole) {
+    const selectedUser = staffUsers.find((user) => user.role === role) || users.find((user) => user.role === role);
     if (!selectedUser) return;
     router.push(loginDemo(selectedUser));
   }
 
   return (
-    <main className="onco-page min-h-ios-screen px-5 py-8 safe-area-inset-bottom">
-      <section className="mx-auto grid min-h-ios-landing max-w-7xl gap-10 lg:grid-cols-[1fr_620px] lg:items-center">
-        <div>
-          <div className="mb-8 flex items-center gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-onco-sage text-onco-cream shadow-onco">
-              <WalkIcon />
-            </span>
-            <span className="onco-display text-2xl font-extrabold">OncoMotionRx</span>
-          </div>
-          <span className="inline-flex rounded-full bg-onco-sage-soft px-3 py-1 text-xs font-semibold text-onco-sage">
-            Frontend demo · backend not connected yet
+    <main className="ios-patient-page bg-[#FBF7EF] text-[#174B38]">
+      <section className="ios-patient-viewport mx-auto flex min-h-ios-screen w-full max-w-[430px] flex-col px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-7">
+
+        <div className="mt-3 flex items-center gap-2 text-[#174B38]">
+          <img alt="" className="h-8 w-8 rounded-lg object-cover" src="/onco/icons/oncomotionrx-icon.png" />
+          <span className="onco-display text-[22px] font-extrabold leading-none text-[#174B38]">
+            OncoMotionRx
           </span>
-          <h1 className="onco-display mt-7 text-5xl font-extrabold leading-none text-onco-ink sm:text-7xl">
-            Movement, made for recovery.
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-onco-muted">
-            A structured movement prescription platform for life during and after cancer treatment — guided by Artie.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            {chips.map((chip) => (
-              <span className="rounded-full border border-onco-line bg-white px-4 py-2 text-sm font-semibold text-onco-muted shadow-sm" key={chip}>
-                {chip}
-              </span>
-            ))}
-          </div>
         </div>
 
-        <Card className="p-5 sm:p-8">
-          <p className="text-[13px] font-black uppercase tracking-[0.22em] text-onco-terracotta">Welcome</p>
-          <h2 className="onco-display mt-3 text-3xl font-extrabold text-onco-ink">
-            {selectedRole === "patient" ? "Start your program" : "Sign in to OncoMotionRx"}
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-onco-muted">{selectedCard.body}</p>
+        <LandingHeroImage />
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {accessCards.map((card) => (
-              <button
-                className={cn(
-                  "min-h-[112px] rounded-2xl border border-onco-line bg-white p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-onco-sage/30",
-                  selectedRole === card.role && "border-2 border-onco-sage bg-onco-sage-soft/70",
-                )}
-                key={card.role}
-                type="button"
-                onClick={() => selectRole(card.role)}
-              >
-                <span className="inline-flex rounded-lg bg-onco-cream px-2 py-1 text-xs font-black text-onco-muted">{card.short}</span>
-                <span className="ml-3 text-sm font-extrabold text-onco-ink">{card.title}</span>
-                <p className="mt-2 text-xs leading-5 text-onco-muted">{card.role === "patient" ? "Start patient program" : "Email/password sign-in"}</p>
-              </button>
-            ))}
+        <section className="mt-7">
+          <h1 className="onco-display text-[34px] font-extrabold leading-[0.98] text-onco-ink">
+            Movement,<br />made for recovery.
+          </h1>
+          <p className="mt-4 text-[15px] leading-6 text-[#3F4B47]">
+            A structured movement program built for life during and after cancer treatment - guided by <span className="font-bold text-[#174B38]">Artie</span>, your personal activity consultant.
+          </p>
+        </section>
+
+        <div className="mt-auto space-y-2.5 pt-7">
+          <Button className="w-full" type="button" onClick={openCareCode}>
+            I have a care team code
+          </Button>
+
+          <Button className="w-full" variant="outline" type="button" onClick={startOnOwn}>
+            Start on my own
+          </Button>
+
+          <button
+            className="block w-full py-1 text-center text-xs font-semibold text-onco-sage hover:text-onco-ink"
+            type="button"
+            onClick={openForgotCode}
+          >
+            Need help finding your code?
+          </button>
+
+          <div className="flex items-center gap-4 py-1 text-xs font-semibold text-[#8A948E]">
+            <span className="h-px flex-1 bg-[#DAD5CB]" />
+            <span>Staff access</span>
+            <span className="h-px flex-1 bg-[#DAD5CB]" />
           </div>
 
-          {selectedRole === "patient" ? (
-            <div className="mt-6 rounded-2xl border border-onco-line bg-onco-cream p-4">
-              <p className="text-sm font-semibold text-onco-ink">No username or password needed.</p>
-              <p className="mt-1 text-sm leading-6 text-onco-muted">Start on your own or continue with a Care Code inside onboarding.</p>
-              <Button className="mt-4 min-h-[54px] w-full" onClick={startPatientProgram}>
-                Start patient program
-              </Button>
-            </div>
-          ) : (
-            <div className="mt-7 grid gap-5">
-              <label>
-                <span className="mb-2 block text-[13px] font-black uppercase tracking-[0.18em] text-onco-muted-light">
-                  Email address
-                </span>
-                <input className="onco-input min-h-[56px]" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" />
-              </label>
-              <label>
-                <span className="mb-2 block text-[13px] font-black uppercase tracking-[0.18em] text-onco-muted-light">
-                  Password
-                </span>
-                <input className="onco-input min-h-[56px]" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Demo password" />
-              </label>
-
-              <Button className="min-h-[58px] w-full text-base" onClick={signInStaff}>
-                Sign in
-                <span aria-hidden="true">&rarr;</span>
-              </Button>
-            </div>
-          )}
-        </Card>
+          <Button className="w-full" variant="outline" type="button" onClick={() => setRoleSheetOpen(true)}>
+            Select roles
+          </Button>
+        </div>
       </section>
+
+      <div className={cn("fixed inset-0 z-50 bg-transparent transition", roleSheetOpen ? "opacity-100" : "pointer-events-none opacity-0")} onClick={() => setRoleSheetOpen(false)} />
+      <section
+        className={cn(
+          "ios-modal-panel fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[430px] overflow-y-auto rounded-t-[24px] border border-[#E0DBD2] bg-white px-5 pb-[max(1.4rem,env(safe-area-inset-bottom))] pt-4 shadow-[0_-18px_42px_-24px_rgba(30,36,33,0.5)] transition-transform sm:px-7",
+          roleSheetOpen ? "translate-y-0" : "translate-y-full",
+        )}
+        aria-hidden={!roleSheetOpen}
+      >
+        <div className="mx-auto h-1.5 w-16 rounded-full bg-[#B9B8B1]" />
+        <div className="mt-5 flex items-center justify-between gap-3">
+          <h2 className="onco-display text-[24px] font-extrabold text-onco-ink">Select role</h2>
+          <button className="grid h-10 w-10 cursor-pointer place-items-center rounded-full text-3xl leading-none text-[#0F1714]" type="button" onClick={() => setRoleSheetOpen(false)} aria-label="Close role selector">
+            x
+          </button>
+        </div>
+
+        <div className="mt-5 space-y-3">
+          {roleCards.map((role) => (
+            <button
+              className="flex min-h-[76px] w-full cursor-pointer items-center gap-4 rounded-xl border border-[#DDD8CF] bg-white px-4 py-3 text-left transition hover:bg-[#F3F7F0]"
+              key={role.role}
+              onClick={() => signInRole(role.role)}
+              type="button"
+            >
+              <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#E7F0E5] text-[#174B38]">
+                <StaffRoleIcon icon={role.icon} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[21px] font-semibold leading-6 text-[#174B38]">{role.title}</span>
+                <span className="mt-1 block text-[16px] leading-5 text-[#555D59]">{role.body}</span>
+              </span>
+              <ChevronRightIcon className="shrink-0 text-2xl text-[#0F1714]" />
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <SelfStartModal
+        open={selfStartOpen}
+        onClose={() => setSelfStartOpen(false)}
+        onSuccess={() => continueToOnboarding(1)}
+      />
+      <CareTeamCodeModal
+        initialStage={careCodeStage}
+        open={careCodeOpen}
+        onClose={() => setCareCodeOpen(false)}
+        onSuccess={(nextStep) => continueToOnboarding(nextStep)}
+      />
     </main>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -28,3 +28,4 @@ local-whisper-cpu/__pycache__/
 scripts/fhir/fixture-bundle.json
 
 supabase/.temp/
+.vercel

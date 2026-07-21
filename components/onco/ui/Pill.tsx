@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from "react";
+﻿import type { HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 type PillProps = HTMLAttributes<HTMLSpanElement> & {
@@ -6,12 +6,13 @@ type PillProps = HTMLAttributes<HTMLSpanElement> & {
   icon?: ReactNode;
 };
 
-export function Pill({ active = false, className, children, icon, ...props }: PillProps) {
+export function Pill({ active = false, className, children, icon, onClick, ...props }: PillProps) {
   return (
-    <span className={cn("onco-pill", active && "onco-pill-active", className)} {...props}>
+    <span className={cn("onco-pill", active && "onco-pill-active", onClick && "cursor-pointer", className)} onClick={onClick} {...props}>
       {icon}
       {children}
     </span>
   );
 }
+
 

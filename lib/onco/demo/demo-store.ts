@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useSyncExternalStore } from "react";
 import { initialDemoState } from "./demo-data";
@@ -218,10 +218,12 @@ export const demoStore = {
     return state.site;
   },
   login(role: DemoRole, userId: string) {
-    setState((current) => ({ ...current, role, userId }));
+    setState((current) => role === "patient"
+      ? { ...current, role, userId, completedSessions: [1, 2], sessionProgress: { "3": 0 }, chatMessages: initialDemoState.chatMessages }
+      : { ...current, role, userId });
   },
   logout() {
-    setState((current) => ({ ...current, role: null, userId: null }));
+    setState((current) => ({ ...current, role: null, userId: null, chatMessages: initialDemoState.chatMessages }));
   },
   preparePatientProgram() {
     setState((current) => ({
@@ -455,6 +457,7 @@ export const demoStore = {
         rotated,
         ...current.acceptedCareCodes.filter((item) => item.code !== match.code),
       ],
+      generatedCareCode: current.generatedCareCode === match.code ? nextCode : current.generatedCareCode,
       toast: { id: Date.now(), message: "New care code generated", tone: "success" },
     }));
     return nextCode;
@@ -466,9 +469,9 @@ export const demoStore = {
       .replace(/[\u2010-\u2015\u2212]/g, "-")
       .replace(/\s+/g, "");
     const generatedMatch = state.acceptedCareCodes.find((item) => item.code.toUpperCase() === normalized);
-    const currentGeneratedMatches = state.generatedCareCode?.toUpperCase() === normalized;
+    const currentGeneratedMatches = Boolean(generatedMatch && state.generatedCareCode?.toUpperCase() === normalized);
     const generatedPattern = normalized.match(/^([A-Z]{2,})-([A-Z0-9]+)-(\d{4})$/);
-    const generatedPatternMatches = Boolean(currentGeneratedMatches && generatedPattern);
+    const generatedPatternMatches = false;
     const fallbackName = generatedPattern?.[1]?.toLowerCase() || "patient";
     const fallbackContact = state.generatedCareCode?.toUpperCase() === normalized && state.patientIdentity?.contact.includes("@")
       ? state.patientIdentity.contact
@@ -1173,3 +1176,4 @@ export const demoStore = {
     }));
   },
 };
+

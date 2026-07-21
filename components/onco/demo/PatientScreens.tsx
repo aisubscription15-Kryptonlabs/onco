@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -85,6 +85,7 @@ export function OnboardingStateMachine() {
   const [codeOpen, setCodeOpen] = useState(false);
   const [codeInitialStage, setCodeInitialStage] = useState<"entry" | "forgot">("entry");
   const [selfOpen, setSelfOpen] = useState(false);
+  const launchHandledRef = useRef(false);
   const isCareCodeFlow = state.onboardingMode === "care_code";
   const total = isCareCodeFlow ? 8 : 9;
   const stepNames = isCareCodeFlow ? careCodeSteps : selfStartSteps;
@@ -92,6 +93,42 @@ export function OnboardingStateMachine() {
   const currentStepNumber = isCareCodeFlow ? step : Math.min(stepNames.length, step + 1 + stepOffset);
   const currentStepName = stepNames[currentStepNumber - 1] || "Start";
   const showLinkedPatientHeader = state.role === "patient" && state.patientProfile.careCodeLinked && state.patientProfile.inviteCodeType === "patient_invite";
+
+  useEffect(() => {
+    if (typeof window === "undefined" || launchHandledRef.current) return;
+    launchHandledRef.current = true;
+
+    if (window.sessionStorage.getItem("oncoOpenCareCode") === "1") {
+      window.sessionStorage.removeItem("oncoOpenCareCode");
+      demoStore.beginCareCode();
+      setCodeInitialStage("entry");
+      setCodeOpen(true);
+      return;
+    }
+
+    if (window.sessionStorage.getItem("oncoOpenForgotCode") === "1") {
+      window.sessionStorage.removeItem("oncoOpenForgotCode");
+      demoStore.beginCareCode();
+      setCodeInitialStage("forgot");
+      setCodeOpen(true);
+      return;
+    }
+
+    if (window.sessionStorage.getItem("oncoStartOnOwn") === "1") {
+      window.sessionStorage.removeItem("oncoStartOnOwn");
+      demoStore.beginSelfStart();
+      setSelfOpen(true);
+      return;
+    }
+
+    if (window.sessionStorage.getItem("oncoContinueOnboarding") === "1") {
+      window.sessionStorage.removeItem("oncoContinueOnboarding");
+      return;
+    }
+
+    router.replace("/");
+  }, [router, state.users]);
+
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const requestedStep = searchParams.get("step");
@@ -106,11 +143,11 @@ export function OnboardingStateMachine() {
     }
   }, [isCareCodeFlow, total]);
   const goBack = () => {
-    if (isCareCodeFlow && step <= 1) {
-      setStep(0);
+    if (step <= 1) {
+      router.push("/");
       return;
     }
-    setStep((value) => Math.max(0, value - 1));
+    setStep((value) => Math.max(1, value - 1));
   };
 
   function finishOnboarding() {
@@ -149,23 +186,23 @@ export function OnboardingStateMachine() {
   }
 
   return (
-    <PatientShell bottomNav={false} showPatientHeader={showLinkedPatientHeader}>
+    <PatientShell bottomNav={false} hidePatientHeader>
       <div className="flex min-h-ios-compact flex-col">
         {step > 0 ? (
-          <div className="mb-5 space-y-2">
-            <div className="flex items-center gap-3">
-            <button className="text-xl text-onco-muted-light" type="button" onClick={goBack}>{"<"}</button>
-            <div className="flex-1">
-              <p className="text-xs font-bold uppercase tracking-[0.08em] text-onco-muted-light">{currentStepName}</p>
-              <p className="text-xs font-semibold text-onco-muted">Step {currentStepNumber} of {stepNames.length}</p>
+          <div className="mb-6 space-y-4">
+            <div className="flex items-center gap-3 text-onco-sage">
+              <img alt="" className="h-10 w-10 rounded-xl object-cover shadow-sm" src="/onco/icons/oncomotionrx-icon.png" />
+              <span className="onco-display text-[22px] font-extrabold leading-none">OncoMotionRx</span>
             </div>
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-[13px] font-extrabold uppercase tracking-[0.14em] text-onco-sage">{currentStepName}</p>
+              <p className="shrink-0 text-sm font-semibold text-onco-muted">Step {currentStepNumber} of {stepNames.length}</p>
             </div>
             <Stepper current={currentStepNumber} total={stepNames.length} />
           </div>
         ) : null}
 
         <div className="flex-1">
-          {step === 0 ? <Welcome /> : null}
           {step === 1 && !isCareCodeFlow ? <TreatmentContext /> : null}
           {step === 2 && !isCareCodeFlow ? <Baseline /> : null}
           {step === 3 && !isCareCodeFlow ? <Safety /> : null}
@@ -180,66 +217,26 @@ export function OnboardingStateMachine() {
         </div>
 
         <div className="mt-5 space-y-2.5">
-          {step === 0 ? (
+          {step > 0 ? (
             <>
-              <div className="space-y-2.5">
-                <Button className="w-full" onClick={() => { demoStore.beginCareCode(); setCodeInitialStage("entry"); setCodeOpen(true); }}>I have a care code</Button>
-                <button
-                  className="block w-full py-2 text-center text-sm font-semibold text-onco-sage hover:text-onco-ink"
-                  type="button"
-                  onClick={() => { demoStore.beginSelfStart(); setSelfOpen(true); }}
-                >
-                  Start on my own
+              <Button className="w-full" onClick={next}>{step === total ? "Generate my plan" : "Continue"}</Button>
+              <div className="mt-4 flex min-h-10 items-center justify-between px-1">
+                <button className="inline-flex min-h-9 items-center gap-2 rounded-lg px-1 text-sm font-semibold text-onco-sage hover:text-onco-ink" type="button" onClick={goBack}>
+                  <span className="text-lg leading-none">{"<"}</span>
+                  Back
                 </button>
-                <button
-                  className="block w-full py-1 text-center text-xs font-semibold text-onco-muted-light hover:text-onco-sage"
-                  type="button"
-                  onClick={() => { demoStore.beginCareCode(); setCodeInitialStage("forgot"); setCodeOpen(true); }}
-                >
-                  Need help finding your code?
+                <button className="min-h-9 rounded-lg px-1 text-sm font-semibold text-onco-sage hover:text-onco-ink" type="button" onClick={skip}>
+                  Skip for now
                 </button>
               </div>
             </>
-          ) : (
-            <>
-              <Button className="w-full" onClick={next}>{step === total ? "Generate my plan" : "Continue"}</Button>
-              <button className="w-full py-1 text-center text-xs font-semibold text-onco-muted-light" type="button" onClick={skip}>
-                Skip for now
-              </button>
-            </>
-          )}
+          ) : null}
         </div>
       </div>
       <SupportModal open={supportOpen} onClose={() => setSupportOpen(false)} />
-      <SelfStartModal open={selfOpen} onClose={() => setSelfOpen(false)} onSuccess={() => setStep(1)} />
-      <CareTeamCodeModal initialStage={codeInitialStage} open={codeOpen} onClose={() => setCodeOpen(false)} onSuccess={(nextStep) => setStep(nextStep)} />
+      <SelfStartModal open={selfOpen} onClose={() => { setSelfOpen(false); if (step === 0) router.push("/"); }} onSuccess={() => setStep(1)} />
+      <CareTeamCodeModal initialStage={codeInitialStage} open={codeOpen} onClose={() => { setCodeOpen(false); if (step === 0) router.push("/"); }} onSuccess={(nextStep) => setStep(nextStep)} />
     </PatientShell>
-  );
-}
-
-function Welcome() {
-  return (
-    <div className="flex h-full flex-col justify-between pt-8">
-      <div>
-        <p className="mb-3 text-[12px] font-black uppercase tracking-[0.18em] text-onco-terracotta">Start</p>
-        <div className="mb-10 flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-onco-sage text-onco-cream"><WalkIcon /></div>
-          <span className="onco-display text-lg font-bold">OncoMotionRx</span>
-        </div>
-        <div className="mb-10 rounded-[28px] bg-onco-sage-soft p-7">
-          <svg viewBox="0 0 260 150" className="h-auto w-full" aria-hidden="true">
-            <circle cx="48" cy="70" r="38" fill="#F7F4ED" /><circle cx="118" cy="48" r="27" fill="#E8C9B0" />
-            <path d="M145 88 Q180 30 216 62 Q238 82 252 57" stroke="#2D5A4A" strokeWidth="8" fill="none" strokeLinecap="round" />
-            <circle cx="252" cy="57" r="8" fill="#C66B3D" />
-          </svg>
-        </div>
-        <h1 className="onco-display text-[34px] font-extrabold leading-[0.96]">Movement,<br />made for recovery.</h1>
-        <p className="mt-4 text-sm leading-6 text-onco-muted">
-          A structured movement program built for life during and after cancer treatment - guided by Artie, your personal activity consultant.
-        </p>
-      </div>
-      <p className="text-center text-xs leading-5 text-onco-muted-light">You can share your plan and progress with your oncology team anytime.</p>
-    </div>
   );
 }
 
@@ -262,7 +259,14 @@ function Baseline() {
     <ScreenTitle title="What did movement look like before cancer?" subtitle="Artie builds from wherever you are today.">
       <div className="space-y-2">
         {options.map((option) => (
-          <Choice key={option} hideIndicator selected={onboarding.previousActivity === option} onClick={() => demoStore.updateOnboarding({ previousActivity: onboarding.previousActivity === option ? "" : option })}>{option}</Choice>
+          <Choice
+            key={option}
+            hideIndicator
+            selected={onboarding.previousActivity === option}
+            onClick={() => demoStore.updateOnboarding({ previousActivity: onboarding.previousActivity === option ? "" : option })}
+          >
+            {option}
+          </Choice>
         ))}
       </div>
       <label className="mt-4 block">
@@ -383,12 +387,26 @@ function Barriers() {
 
 function Environment() {
   const { onboarding } = useDemoStore();
-  const trails = trailsForZip(onboarding.environmentZipCode);
+  const [zipDraft, setZipDraft] = useState(onboarding.environmentZipCode || "");
+  useEffect(() => {
+    if (onboarding.environmentZipCode && onboarding.environmentZipCode !== zipDraft) {
+      setZipDraft(onboarding.environmentZipCode);
+    }
+  }, [onboarding.environmentZipCode, zipDraft]);
+  const hasZip = zipDraft.trim().length === 5;
+  const trails = trailsForZip(hasZip ? zipDraft : "");
   const visibleTrails = trails.slice(0, 2);
   const selectedTrail = visibleTrails.find((trail) => trail.id === onboarding.selectedTrailId) || visibleTrails[0];
-  const hasZip = onboarding.environmentZipCode.trim().length === 5;
   const hasExactZipRoutes = hasZip && visibleTrails.some((trail) => !trail.zipCodes.includes("default"));
   const environmentNote = environmentSupportMessage(onboarding.environment);
+  function updateZip(value: string) {
+    const nextZip = value.replace(/\D/g, "").slice(0, 5);
+    setZipDraft(nextZip);
+    demoStore.updateOnboarding({
+      environmentZipCode: nextZip.length === 5 ? nextZip : "",
+      selectedTrailId: nextZip.length === 5 ? "" : onboarding.selectedTrailId,
+    });
+  }
   return (
     <ScreenTitle title="Where will movement happen?" subtitle="Quick yes or no - this helps Artie suggest routes and backups that actually work for you.">
       <div className="space-y-2.5">
@@ -415,11 +433,9 @@ function Environment() {
             className="onco-input font-semibold"
             inputMode="numeric"
             maxLength={5}
-            value={onboarding.environmentZipCode}
-            onChange={(event) => {
-              demoStore.updateOnboarding({ environmentZipCode: event.target.value.replace(/\D/g, "").slice(0, 5) });
-            }}
-            placeholder="Enter 5-digit zip code"
+            value={zipDraft}
+            onChange={(event) => updateZip(event.target.value)}
+            placeholder="Enter 5-digit ZIP code"
           />
         </div>
       </div>
@@ -430,7 +446,7 @@ function Environment() {
           <div>
             <p className="font-semibold">Nearby short route ideas</p>
             <p className="mt-1 text-xs leading-5 text-onco-muted">
-              {hasExactZipRoutes ? `Showing 2 short options near ${onboarding.environmentZipCode}.` : "No saved trail match yet, so here is a safe starter option."}
+              {hasExactZipRoutes ? `Showing 2 short options near ${zipDraft}.` : "No saved trail match yet, so here is a safe starter option."}
             </p>
           </div>
           {hasExactZipRoutes ? <span className="rounded-full bg-onco-sage-soft px-2 py-1 text-[10px] font-bold text-onco-sage">{selectedTrail.area}</span> : null}
@@ -462,7 +478,7 @@ function Environment() {
       </Card>
       <Card tone="sand" className="hidden">
         <p className="font-semibold">{selectedTrail.name}</p>
-        <p className="mt-1 text-xs font-semibold text-onco-muted">{selectedTrail.area} · {selectedTrail.distance}</p>
+        <p className="mt-1 text-xs font-semibold text-onco-muted">{selectedTrail.area} - {selectedTrail.distance}</p>
         <div className="mt-3 grid gap-2 text-xs leading-5 text-onco-muted">
           <p><span className="font-semibold text-onco-ink">Weather fit:</span> {selectedTrail.weather}</p>
           <p><span className="font-semibold text-onco-ink">Typical traffic:</span> {selectedTrail.traffic}</p>
@@ -490,18 +506,11 @@ function EnvironmentToggleRow({ checked, icon, label, onChange }: { checked: boo
       onClick={() => onChange(!checked)}
     >
       <EnvironmentOptionIcon name={icon} selected={checked} />
-      <span className="min-w-0 flex-1 pr-7 text-left">{label}</span>
-      {checked ? (
+      <span className="min-w-0 flex-1 pr-7 text-left">{label}</span>      {checked ? (
         <span className="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full border border-onco-cream/70 text-[10px] text-onco-cream">
           <CheckIcon />
         </span>
-      ) : (
-        <span className="absolute right-4 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center text-onco-sage/70">
-          <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.3">
-            <path d="m7.5 4.5 5 5.5-5 5.5" />
-          </svg>
-        </span>
-      )}
+      ) : null}
     </button>
   );
 }
@@ -511,45 +520,41 @@ function EnvironmentOptionIcon({ name, selected }: { name: (typeof environmentOp
     <span
       aria-hidden="true"
       className={cn(
-        "grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#EEF4E7] text-[#2D5A4A]",
-        selected && "bg-onco-cream/15 text-onco-cream",
+        "grid h-8 w-8 shrink-0 place-items-center text-onco-sage",
+        selected && "text-onco-cream",
       )}
     >
-      <svg viewBox="0 0 44 44" className="h-7 w-7" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 40 40" className="h-6 w-6" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
         {name === "path" ? (
           <>
-            <path d="M8 33c6.2-5.8 7.2-13.8 14-17.6 4.2-2.3 8.4-2 13.2-5.8" strokeWidth="2.3" />
-            <path d="M31.5 13.5v16" strokeWidth="1.8" />
-            <circle cx="31.5" cy="11" r="4.5" fill={selected ? "rgba(247,244,237,0.16)" : "#DDE8C8"} strokeWidth="1.6" />
-            <path d="M10 34.5c3.3-1.3 6.3-1.4 9.3-.3M6.5 28.8c2.4-.4 4.5-.2 6.6.7" strokeWidth="1.4" />
+            <path d="M13 30V11" strokeWidth="2" />
+            <path d="M25 30V11" strokeWidth="2" />
+            <path d="m18.5 11-2 4M21.5 11l2 4M17 20h6M16 27h8" strokeWidth="1.6" />
           </>
         ) : null}
         {name === "shield" ? (
           <>
-            <path d="M22 7.5 11.5 11.8v8.4c0 6.3 4.1 11.6 10.5 15.4 6.4-3.8 10.5-9.1 10.5-15.4v-8.4L22 7.5Z" fill={selected ? "rgba(247,244,237,0.12)" : "#DDE8C8"} strokeWidth="2.1" />
-            <path d="m16.6 21.5 3.5 3.4 7.5-8.2" strokeWidth="2.5" />
+            <path d="M20 7.8 10.8 11.6v7.7c0 6 3.6 10.8 9.2 13.7 5.6-2.9 9.2-7.7 9.2-13.7v-7.7L20 7.8Z" strokeWidth="2" />
+            <path d="m15.5 20.6 3.1 3 6.4-7" strokeWidth="2" />
           </>
         ) : null}
         {name === "bathroom" ? (
           <>
-            <path d="M13.5 8.5h17v27h-17z" fill={selected ? "rgba(247,244,237,0.12)" : "#EFF4E6"} strokeWidth="2" />
-            <circle cx="22" cy="15" r="2.2" fill={selected ? "#F7F4ED" : "#7FA05A"} stroke="none" />
-            <path d="M18.5 21h7l1.2 8h-9.4L18.5 21Z" strokeWidth="2" />
-            <path d="M30.5 22h3M16 35.5h17" strokeWidth="1.8" />
+            <path d="M13 9h14v22H13Z" strokeWidth="2" />
+            <path d="M16 12h8v7.5a4 4 0 0 1-4 4h-4V12Z" strokeWidth="1.7" />
+            <path d="M27 16h3M16 31v4M13 35h10" strokeWidth="1.7" />
           </>
         ) : null}
         {name === "gym" ? (
           <>
-            <path d="M7.5 24h29M10.5 19v10M15 20.5v7M29 20.5v7M33.5 19v10" strokeWidth="2.2" />
-            <path d="M18.5 24h7" strokeWidth="2.4" />
+            <path d="M8 20h24" strokeWidth="2" />
+            <path d="M11 15v10M15 17v6M25 17v6M29 15v10" strokeWidth="2" />
           </>
         ) : null}
         {name === "stairs" ? (
           <>
-            <path d="M11 18 22 9l11 9" strokeWidth="2" />
-            <path d="M15 18v17h14V18" fill={selected ? "rgba(247,244,237,0.12)" : "#EFF4E6"} strokeWidth="2" />
-            <path d="M17 32h5v-5h5v-5h5" strokeWidth="2.2" />
-            <path d="M12 35h24" strokeWidth="1.8" />
+            <path d="M9 31h6v-5h6v-5h6v-5h4" strokeWidth="2" />
+            <path d="M10 24h4M16 19h4M22 14h4" strokeWidth="1.5" />
           </>
         ) : null}
       </svg>
@@ -564,7 +569,7 @@ function Support({ onAdd }: { onAdd: () => void }) {
       {onboarding.supportPerson ? (
         <Card className="relative min-h-[54px] rounded-[14px] border-onco-sage bg-onco-sage px-4 py-3 pr-12 text-onco-cream">
           <p className="font-semibold">{onboarding.supportPerson.name}</p>
-          <p className="text-sm text-onco-cream/80">{onboarding.supportPerson.relationship} · Invite sent · pending</p>
+          <p className="text-sm text-onco-cream/80">{onboarding.supportPerson.relationship} - Invite sent - pending</p>
           <span className="absolute right-3 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full border border-onco-cream/70 text-[10px] text-onco-cream">
             <CheckIcon />
           </span>
@@ -602,8 +607,21 @@ function GoalTracking() {
           const isSelected = isOwnOption ? customGoalOpen || Boolean(customGoal) : selectedGoals.includes(goal);
           if (isOwnOption && isSelected) {
             return (
-              <div key={goal}>
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-muted-light">Write your own</p>
+              <div className="space-y-2" key={goal}>
+                <button
+                  className="onco-option-row onco-option-row-active"
+                  type="button"
+                  onClick={() => {
+                    setCustomGoalOpen(false);
+                    updateGoalAnchor(selectedGoals, "");
+                  }}
+                >
+                  <GoalAnchorIcon goal={goal} selected />
+                  <span className="min-w-0 flex-1 pr-7">Write my own...</span>
+                  <span className="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full border border-onco-cream/70 text-[10px]">
+                    <CheckIcon />
+                  </span>
+                </button>
                 <textarea
                   autoFocus
                   aria-label="Write my own goal"
@@ -614,8 +632,7 @@ function GoalTracking() {
                 />
               </div>
             );
-          }
-          return (
+          }          return (
             <button
               className={cn(
                 "onco-option-row",
@@ -757,7 +774,7 @@ function ReadyToGenerate() {
         </div>
         <p className="mt-3 text-xs leading-5 text-[#C7D8CC]">Baseline: {baselineMet || 0} MET-hrs/week from usual movement.</p>
         {selectedTrail ? <p className="mt-2 text-xs leading-5 text-[#C7D8CC]">Route idea: {selectedTrail.name}, {selectedTrail.distance}, about {selectedTrail.time}.</p> : null}
-        <p className="mt-2 text-sm text-[#C7D8CC]">{onboarding.preferences.join(", ")} · {onboarding.barriers.join(", ")}</p>
+        <p className="mt-2 text-sm text-[#C7D8CC]">{onboarding.preferences.join(", ")} - {onboarding.barriers.join(", ")}</p>
       </Card>
     </ScreenTitle>
   );
@@ -772,7 +789,7 @@ export function SafetyPauseClient() {
         <h1 className="onco-display text-2xl font-extrabold">Pause before starting</h1>
         <p className="mt-3 text-sm leading-6">You selected: {onboarding.redFlags.join(", ")}. Please acknowledge this safety pause before viewing your plan.</p>
       </Card>
-      <Button className="mt-5 w-full" onClick={() => { demoStore.setSafetyPaused(false); router.push("/plan-reveal"); }}>I understand · show my plan</Button>
+      <Button className="mt-5 w-full" onClick={() => { demoStore.setSafetyPaused(false); router.push("/plan-reveal"); }}>I understand - show my plan</Button>
       <Link className="onco-button-outline mt-3 w-full" href="/doctor-summary" onClick={() => window.sessionStorage.removeItem("doctorSummaryBackTo")}>Share with my doctor first</Link>
     </PatientShell>
   );
@@ -794,7 +811,7 @@ export function PlanRevealClient() {
       <Card tone="sage" className="mt-8 p-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#A9C5B4]">Week 1 prescription</p>
         <h1 className="onco-display mt-2 text-3xl font-extrabold">{patientPlan.activity} {patientPlan.minutes} minutes</h1>
-        <p className="mt-1 text-sm text-[#C7D8CC]">{patientPlan.daysPerWeek} days/week · {patientPlan.intensity} · {patientPlan.metHours} MET-hrs/wk</p>
+        <p className="mt-1 text-sm text-[#C7D8CC]">{patientPlan.daysPerWeek} days/week - {patientPlan.intensity} - {patientPlan.metHours} MET-hrs/wk</p>
       </Card>
       <Card className="mt-4">
         <div className="flex items-center justify-between gap-3">
@@ -856,7 +873,7 @@ export function TodayClient() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.06em] text-onco-muted-light">Next Artie session</p>
-            <p className="mt-1 font-semibold">Session 3 · Goal setting</p>
+            <p className="mt-1 font-semibold">Session 3 - Goal setting</p>
             <p className="mt-1 text-xs leading-5 text-onco-muted">8 minutes to plan around fatigue and protect your weekly rhythm.</p>
           </div>
           <Link className="onco-button-outline min-h-0 shrink-0 py-2 text-xs" href="/sessions/3">Start</Link>
@@ -884,28 +901,79 @@ export function PrescriptionClient() {
   const { patientPlan, onboarding } = useDemoStore();
   const [open, setOpen] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [showAllAdaptations, setShowAllAdaptations] = useState(false);
+  const weeklyMinutes = patientPlan.minutes * patientPlan.daysPerWeek;
+  const adaptationChips = patientPlan.adaptations.length ? patientPlan.adaptations : ["starts gently"];
+  const visibleAdaptations = showAllAdaptations ? adaptationChips : adaptationChips.slice(0, 4);
+  const hiddenAdaptationCount = Math.max(adaptationChips.length - visibleAdaptations.length, 0);
+  const safetyItems = [
+    { title: "Stop for chest pain", detail: "Pause activity and contact your care team if chest pain or pressure appears." },
+    { title: "Hydrate", detail: "Keep water nearby and use a gentler version on tired days." },
+    { title: "Use flat steady routes", detail: "Choose smooth, predictable paths and avoid pushing pace." },
+    { title: "Choose bathroom loops", detail: "Use short loops near home or places with easy bathroom access." },
+  ];
   return (
     <PatientShell activeTab="prescription" requireRole>
       <h1 className="onco-display text-[28px] font-extrabold">Your prescription</h1>
-      <Card className="mt-4">
-        <p className="font-semibold">Weekly goal</p>
-        <p className="mt-1 text-sm text-onco-muted">{patientPlan.minutes * patientPlan.daysPerWeek} minutes per week, about {patientPlan.metHours} MET-hours.</p>
-      </Card>
-      <Card className="mt-4">
-        <p className="font-semibold">Why this plan fits</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {patientPlan.adaptations.map((item) => <Pill active key={item}>{item}</Pill>)}
-          {onboarding.barriers.length === 0 ? <Pill>starts gently</Pill> : null}
+      <Card tone="sage" className="mt-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.06em] text-onco-cream/70">This week</p>
+        <h2 className="onco-display mt-2 text-3xl font-extrabold">{patientPlan.activity} {patientPlan.minutes} minutes</h2>
+        <p className="mt-2 text-sm text-onco-cream/80">{patientPlan.daysPerWeek} days/week - {patientPlan.intensity}</p>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="rounded-2xl bg-onco-cream/12 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-cream/65">Weekly goal</p>
+            <p className="mt-1 text-lg font-extrabold">{weeklyMinutes} min</p>
+          </div>
+          <div className="rounded-2xl bg-onco-cream/12 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-cream/65">MET dose</p>
+            <p className="mt-1 text-lg font-extrabold">{patientPlan.metHours}</p>
+          </div>
         </div>
       </Card>
-      <Card tone="sage" className="mt-5"><h2 className="onco-display text-3xl font-extrabold">{patientPlan.activity} {patientPlan.minutes} minutes</h2><p className="mt-1 text-sm text-[#C7D8CC]">{patientPlan.daysPerWeek} days/week · {patientPlan.intensity} · {patientPlan.metHours} MET-hrs/wk</p></Card>
-      <div className="mt-4 space-y-2">{["Stop for chest pain", "Hydrate", "Use flat steady routes", "Choose bathroom loops"].map((item) => <button className="w-full rounded-2xl border border-onco-line bg-white p-4 text-left text-sm font-semibold" key={item} onClick={() => setOpen(open === item ? null : item)}>{item}{open === item ? <p className="mt-2 text-xs font-normal text-onco-muted">This guidance helps you stay inside your safety boundaries.</p> : null}</button>)}</div>
+      <Card className="mt-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-semibold">Adapted for you</p>
+            <p className="mt-1 text-sm leading-5 text-onco-muted">Artie shaped this around your profile and comfort level.</p>
+          </div>
+          <AiBadge />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {visibleAdaptations.map((item) => <Pill active key={item}>{item}</Pill>)}
+          {hiddenAdaptationCount ? (
+            <Pill className="cursor-pointer" onClick={() => setShowAllAdaptations((value) => !value)}>
+              {showAllAdaptations ? "Show less" : `+${hiddenAdaptationCount} more`}
+            </Pill>
+          ) : null}
+        </div>
+      </Card>
+      <Card className="mt-4">
+        <p className="font-semibold">Before you start</p>
+        <div className="mt-3 divide-y divide-onco-line">
+          {safetyItems.map((item) => (
+            <button
+              className="flex w-full items-start gap-3 py-3 text-left"
+              key={item.title}
+              onClick={() => setOpen(open === item.title ? null : item.title)}
+              type="button"
+            >
+              <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-onco-sage-soft text-onco-sage">
+                <CheckIcon className="text-sm" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold">{item.title}</span>
+                {open === item.title ? <span className="mt-1 block text-xs leading-5 text-onco-muted">{item.detail}</span> : null}
+              </span>
+            </button>
+          ))}
+        </div>
+      </Card>
       <Link
         className="onco-button-primary mt-4 w-full"
         href="/doctor-summary?from=prescription"
         onClick={() => window.sessionStorage.setItem("doctorSummaryBackTo", "prescription")}
       >
-        Generate doctor summary
+        Share with doctor
       </Link>
       <Button className="mt-3 w-full" variant="outline" onClick={() => demoStore.toast("Doctor review requested")}>Request doctor review</Button>
       <Button className="mt-3 w-full" variant="outline" onClick={() => setHistoryOpen(true)}>View prescription history</Button>
@@ -924,7 +992,7 @@ export function LegacySessionsClient() {
   return (
     <PatientShell activeTab="sessions" requireRole>
       <h1 className="onco-display text-[28px] font-extrabold">Sessions</h1>
-      {[1, 2, 3].map((id) => <Card key={id} className="mt-3 flex items-center justify-between"><div><p className="font-semibold">Session {id}{id === 3 ? " · Goal setting" : ""}</p><p className="text-xs text-onco-muted">{completedSessions.includes(id) ? "Completed" : "Available now"}</p></div>{id === 3 ? <Link className="onco-button-primary min-h-0 py-2" href="/sessions/3">Start session 3</Link> : <Badge>Done</Badge>}</Card>)}
+      {[1, 2, 3].map((id) => <Card key={id} className="mt-3 flex items-center justify-between"><div><p className="font-semibold">Session {id}{id === 3 ? " - Goal setting" : ""}</p><p className="text-xs text-onco-muted">{completedSessions.includes(id) ? "Completed" : "Available now"}</p></div>{id === 3 ? <Link className="onco-button-primary min-h-0 py-2" href="/sessions/3">Start session 3</Link> : <Badge>Done</Badge>}</Card>)}
     </PatientShell>
   );
 }
@@ -937,7 +1005,7 @@ export function LegacySessionThreeClient() {
   const messages = [`Nice to see you, ${firstName}. What got in the way this week?`, "That is information, not failure. Want to plan around fatigue?", "Great. I will update your goal to protect infusion days.", "Session complete."];
   return (
     <PatientShell bottomNav={false} requireRole>
-      <h1 className="onco-display text-xl font-extrabold text-center">Session 3 · Goal setting</h1><Stepper className="mt-3" current={Math.min(progress + 1, 5)} total={5} />
+      <h1 className="onco-display text-xl font-extrabold text-center">Session 3 - Goal setting</h1><Stepper className="mt-3" current={Math.min(progress + 1, 5)} total={5} />
       <div className="mt-6 space-y-3"><ChatBubble sender="artie" text={messages[Math.min(progress, messages.length - 1)]} />{progress < 3 ? <Button className="w-full" variant="outline" onClick={() => demoStore.setSessionProgress(3, progress + 1)}>{progress === 0 ? "Fatigue got in the way" : "Yes, plan around it"}</Button> : <Button className="w-full" onClick={() => { demoStore.completeSession(3); demoStore.toast("Session 3 completed"); router.push("/sessions"); }}>Finish session</Button>}</div>
     </PatientShell>
   );
@@ -945,18 +1013,88 @@ export function LegacySessionThreeClient() {
 
 export function SessionsClient() {
   const { completedSessions, programSessions } = useDemoStore();
+  const completedCount = completedSessions.filter((sessionNumber) => sessionNumber <= 12).length;
+  const completionPercent = Math.round((completedCount / 12) * 100);
+  const sessionRows = [
+    { number: 1, title: "Getting started", detail: "Monitoring intensity", completed: "Completed May 26" },
+    { number: 2, title: "Safety + hydration", detail: "What to wear", completed: "Completed June 6" },
+    { number: 3, title: "Goal setting", detail: "8 minutes", description: "Artie reviews your last 2 weeks, helps you set a goal that fits your energy, and updates your prescription." },
+    { number: 4, title: "Tracking your movement", detail: "10 minutes", description: "Connect tracking habits so your minutes, steps, and MET dose stay easy to follow." },
+    { number: 5, title: "Fitness check-in", detail: "10 minutes", description: "Review how your body is responding and adjust your plan around today's energy." },
+    { number: 6, title: "Why movement helps recovery", detail: "10 minutes", description: "Learn how small, safe movement supports stamina, confidence, and daily routines." },
+    { number: 7, title: "Overcoming barriers", detail: "10 minutes", description: "Plan around fatigue, bathrooms, weather, motivation, and other real-life blockers." },
+    { number: 8, title: "Support and routines", detail: "10 minutes", description: "Choose support, reminders, and routine anchors that make the plan easier to keep." },
+    { number: 9, title: "Enjoyment and confidence", detail: "10 minutes", description: "Keep movement connected to what feels doable and meaningful." },
+    { number: 10, title: "Progress reflection", detail: "10 minutes", description: "Look back at your progress and decide what should change next." },
+    { number: 11, title: "Doctor visit prep", detail: "10 minutes", description: "Prepare questions and a simple movement summary for your care team." },
+    { number: 12, title: "Next phase plan", detail: "10 minutes", description: "Set up the next phase with a plan that can keep growing safely." },
+  ];
+  const completedSessionRows = sessionRows.filter((session) => completedSessions.includes(session.number));
+  const currentSession = sessionRows.find((session) => !completedSessions.includes(session.number));
+  const upcomingRows = currentSession ? sessionRows.filter((session) => session.number > currentSession.number) : [];
   return (
     <PatientShell activeTab="sessions" requireRole>
       <h1 className="onco-display text-[28px] font-extrabold">Sessions</h1>
-      <p className="mt-1 text-sm text-onco-muted">Phase 1 curriculum. Sessions 1 and 2 are complete; session 3 is ready.</p>
-      {programSessions.map((session) => {
+      <div className="mt-1 flex items-center justify-between gap-3 text-sm text-onco-muted">
+        <p>Phase 1: Building habits</p>
+        <p className="shrink-0">{completedCount} of 12 complete</p>
+      </div>
+      <ProgressBar className="mt-3" value={completionPercent} max={100} />
+      <div className="mt-5 space-y-3">
+        {completedSessionRows.map((session) => (
+          <Card key={session.number} className="flex min-h-[76px] items-center gap-3 p-4">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-onco-sage-soft text-onco-sage">
+              <CheckIcon />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold leading-tight">{session.number} - {session.title}</p>
+              <p className="mt-1 text-xs text-onco-muted">{session.detail} - {session.completed || "Completed"}</p>
+            </div>
+          </Card>
+        ))}
+
+        {currentSession ? (
+          <div className="rounded-[22px] bg-onco-sage p-4 text-onco-cream shadow-[0_14px_32px_-24px_rgba(30,36,33,0.65)]">
+            <div className="flex items-start gap-3">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-onco-cream/20 text-sm font-extrabold">{currentSession.number}</div>
+              <div className="min-w-0 flex-1">
+                <h2 className="font-extrabold leading-tight">{currentSession.title}</h2>
+                <p className="mt-1 text-xs font-semibold text-onco-cream/80">{currentSession.detail} - Available now</p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm leading-relaxed text-onco-cream/90">{currentSession.description}</p>
+            <Link className="mt-4 flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl bg-onco-cream px-4 text-sm font-extrabold text-onco-ink" href={`/sessions/${currentSession.number}`}>
+              <span className="grid h-5 w-5 place-items-center rounded-full border border-onco-sage/30 text-onco-sage" aria-hidden="true">
+                <span className="ml-0.5 h-0 w-0 border-y-[5px] border-l-[7px] border-y-transparent border-l-current" />
+              </span>
+              Start session {currentSession.number}
+            </Link>
+          </div>
+        ) : (
+          <Card tone="sage" className="text-center">
+            <CheckIcon className="mx-auto text-2xl" />
+            <p className="mt-2 font-extrabold">All Phase 1 sessions complete</p>
+            <p className="mt-1 text-sm text-onco-cream/80">Your next phase can open from your care plan.</p>
+          </Card>
+        )}
+      </div>
+
+      <div className="mt-5 space-y-4 px-3 pb-4">
+        {upcomingRows.map((session) => (
+          <div key={session.number} className="grid grid-cols-[42px_1fr] items-start gap-2 text-sm text-onco-muted">
+            <span className="font-semibold tabular-nums">{session.number}</span>
+            <span className="font-semibold leading-snug">{session.title}</span>
+          </div>
+        ))}
+      </div>
+      {false && programSessions.map((session) => {
         const done = completedSessions.includes(session.number);
         const available = done || session.number === 3;
         return (
           <Card key={session.id} className={cn("mt-3 flex items-center justify-between gap-3", !available && "opacity-60")}>
             <div>
               <p className="font-semibold">Session {session.number}: {session.title}</p>
-              <p className="text-xs text-onco-muted">{done ? "Completed" : available ? `${session.estimatedMinutes} min · available now` : "Locked for later"}</p>
+              <p className="text-xs text-onco-muted">{done ? "Completed" : available ? `${session.estimatedMinutes} min - available now` : "Locked for later"}</p>
             </div>
             {done ? <Badge>Done</Badge> : available ? <Link className="onco-button-primary min-h-0 shrink-0 py-2 text-xs" href={`/sessions/${session.number}`}>Start</Link> : <Badge tone="sand">Locked</Badge>}
           </Card>
@@ -975,28 +1113,81 @@ export function SessionFlowClient({ sessionId }: { sessionId: number }) {
   const state = useDemoStore();
   const [typed, setTyped] = useState("");
   const [voiceOpen, setVoiceOpen] = useState(false);
+  const [sessionMessages, setSessionMessages] = useState<Array<{ sender: "artie" | "user"; text: string }>>([]);
   const session = state.programSessions.find((item) => item.number === sessionId) || state.programSessions[2];
   const progress = state.sessionProgress[String(sessionId)] || 0;
   const firstName = state.patientProfile.name?.trim().split(/\s+/)[0] || "there";
-  const messages = [`Nice to see you, ${firstName}. What got in the way this week?`, "That is information, not failure. Want to plan around fatigue?", "Great. I will update your goal to protect infusion days.", "Session complete."];
-  function sendTypedAnswer() {
-    if (!typed.trim()) return;
+  const openingMessage = `Nice to see you, ${firstName}. Last week you completed 2 of your 3 walks - that's real progress. What got in the way on Thursday?`;
+  const profileSuggestionChips = useMemo(() => {
+    const suggestions: string[] = [];
+    const selected = [...state.onboarding.barriers, ...state.onboarding.preferences, ...state.onboarding.preferenceChips];
+    const has = (...values: string[]) => selected.some((item) => values.some((value) => item.toLowerCase().includes(value.toLowerCase())));
+    if (has("Fatigue")) suggestions.push("Fatigue got in the way");
+    if (has("Bathroom")) suggestions.push("Bathroom access");
+    if (has("Fear of overdoing", "overdo")) suggestions.push("I was worried I would overdo it");
+    if (has("Neuropathy", "Numb feet")) suggestions.push("My feet felt numb");
+    if (has("Nausea")) suggestions.push("Nausea made it harder");
+    if (has("No time")) suggestions.push("I did not have enough time");
+    if (has("Weather")) suggestions.push("Weather got in the way");
+    if (has("No safe place")) suggestions.push("I did not feel safe walking");
+    if (has("Gardening")) suggestions.push("I want gardening to count");
+    if (has("Walking")) suggestions.push("Walking felt doable");
+    return Array.from(new Set(suggestions)).slice(0, 4).length
+      ? Array.from(new Set(suggestions)).slice(0, 4)
+      : ["Fatigue got in the way", "Bathroom access", "I was worried I would overdo it"];
+  }, [state.onboarding.barriers, state.onboarding.preferenceChips, state.onboarding.preferences]);
+  function artieSessionReply(answer: string) {
+    if (/bathroom/i.test(answer)) return "That makes sense. Bathroom access is planning information, not an excuse. Want to build shorter loops with restroom stops?";
+    if (/overdo|worried|afraid/i.test(answer)) return "That worry is valid. We can keep your next goal below your limit and use a stop-before-tired rule.";
+    if (/neuropathy|numb|feet/i.test(answer)) return "Thanks for flagging that. We can favor flatter routes, shorter loops, and shoes or surfaces that feel steadier.";
+    if (/nausea/i.test(answer)) return "Nausea days need a softer plan. We can use very short movement windows and avoid pushing on rough treatment days.";
+    if (/weather/i.test(answer)) return "Weather is a real planning detail. I can suggest indoor backups or shaded, cooler route windows.";
+    if (/safe/i.test(answer)) return "Safety comes first. We can use indoor movement, supported routes, or care-team-approved alternatives.";
+    if (/garden/i.test(answer)) return "Gardening can count when it is paced safely. We can split it into short, gentle blocks.";
+    if (/walking/i.test(answer)) return "Good. We'll keep walking as the anchor and adjust the dose around your current energy.";
+    if (/fatigue|wiped|tired|infusion/i.test(answer)) return "That's not a failure - that's information. Infusion days are predictably hard. Want to plan your walks around your treatment schedule?";
+    return "Thank you for telling me. I'll use that to shape a safer, more realistic goal for this week.";
+  }
+  function sendAnswer(answer: string) {
+    const cleanAnswer = answer.trim();
+    if (!cleanAnswer) return;
+    setSessionMessages((current) => [
+      ...current,
+      { sender: "user", text: cleanAnswer },
+      { sender: "artie", text: artieSessionReply(cleanAnswer) },
+    ]);
     setTyped("");
     demoStore.setSessionProgress(sessionId, progress + 1);
+  }
+  function sendTypedAnswer() {
+    sendAnswer(typed);
   }
   return (
     <PatientShell bottomNav={false} requireRole>
       <div className="flex min-h-ios-compact flex-col">
         <div>
-          <h1 className="onco-display text-center text-xl font-extrabold">Session {session.number}: {session.title}</h1>
+          <div className="relative">
+            <button
+              aria-label="Back to goal setting"
+              className="absolute left-0 top-1/2 grid h-9 w-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-onco-line bg-white text-xl font-bold text-onco-sage shadow-sm"
+              onClick={() => router.push("/sessions")}
+              type="button"
+            >
+              {"<"}
+            </button>
+            <h1 className="onco-display px-11 text-center text-xl font-extrabold">Session {session.number}: {session.title}</h1>
+          </div>
           <Stepper className="mt-4" current={Math.min(progress + 1, 5)} total={5} />
         </div>
         <div className="mt-6 flex-1 space-y-3 pb-4">
-          <ChatBubble sender="artie" text={messages[Math.min(progress, messages.length - 1)]} />
+          <ChatBubble sender="artie" text={openingMessage} />
+          {sessionMessages.map((message, index) => (
+            <ChatBubble key={`${message.sender}-${index}`} sender={message.sender} text={message.text} />
+          ))}
           {progress < 3 ? (
             <div className="flex flex-wrap gap-2.5">
-              {["Fatigue got in the way", "Bathroom access", "I was worried I would overdo it"].map((reply) => (
-                <Pill key={reply} onClick={() => demoStore.setSessionProgress(sessionId, progress + 1)}>{reply}</Pill>
+              {profileSuggestionChips.map((reply) => (
+                <Pill className="cursor-pointer" key={reply} onClick={() => sendAnswer(reply)}>{reply}</Pill>
               ))}
             </div>
           ) : null}
@@ -1014,11 +1205,15 @@ export function SessionFlowClient({ sessionId }: { sessionId: number }) {
                 placeholder="Type an answer..."
               />
               <button className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-onco-sage" type="button" onClick={() => setVoiceOpen(true)} aria-label="Use microphone"><MicIcon className="text-lg" /></button>
-              <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-onco-ink text-onco-cream disabled:opacity-40" type="button" disabled={!typed.trim()} onClick={sendTypedAnswer} aria-label="Send answer"><ArrowUpIcon /></button>
+              <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-onco-sage text-onco-cream disabled:opacity-40" type="button" disabled={!typed.trim()} onClick={sendTypedAnswer} aria-label="Send answer"><ArrowUpIcon /></button>
             </div>
           </div>
         ) : (
-          <Button className="mb-[max(0.5rem,env(safe-area-inset-bottom))] mt-4 w-full" onClick={() => { demoStore.completeSession(sessionId); demoStore.toast(`Session ${sessionId} completed`); router.push("/sessions"); }}>Finish session</Button>
+          <Button className="mb-[max(0.5rem,env(safe-area-inset-bottom))] mt-4 w-full" onClick={() => {
+            demoStore.completeSession(sessionId);
+            demoStore.toast(`Session ${sessionId} completed`);
+            router.push("/sessions");
+          }}>Finish session</Button>
         )}
       </div>
       <Modal open={voiceOpen} title="Voice input" onClose={() => setVoiceOpen(false)}>
@@ -1033,13 +1228,49 @@ export function ProgressClient() {
   const state = useDemoStore();
   const [range, setRange] = useState("This month");
   const [historyOpen, setHistoryOpen] = useState(false);
-  const totalMinutes = state.activityLogs.reduce((sum, log) => sum + log.duration, 0);
-  const totalMet = state.activityLogs.reduce((sum, log) => sum + log.metHours, 0);
-  const metGoal = Number(Math.max(state.patientPlan.metHours, 1.2).toFixed(2));
+  const loggedMinutes = state.activityLogs.reduce((sum, log) => sum + log.duration, 0);
+  const loggedMet = state.activityLogs.reduce((sum, log) => sum + log.metHours, 0);
+  const loggedActiveDays = new Set(state.activityLogs.map((log) => log.dateLabel)).size;
+  const weeklyMinuteGoal = state.patientPlan.minutes * state.patientPlan.daysPerWeek;
+  const weeklyMetGoal = Number(Math.max(state.patientPlan.metHours, 1.2).toFixed(2));
+  const rangeProfiles: Record<string, { weeks: number; minutes: number; met: number; activeDays: number; trend: number[] }> = {
+    "This month": {
+      weeks: 4,
+      minutes: loggedMinutes,
+      met: loggedMet,
+      activeDays: loggedActiveDays,
+      trend: [Math.max(4, loggedMinutes - 18), Math.max(8, loggedMinutes - 10), Math.max(10, loggedMinutes - 4), Math.max(0, loggedMinutes)],
+    },
+    "Last 4 weeks": {
+      weeks: 4,
+      minutes: loggedMinutes + 14,
+      met: loggedMet + 0.46,
+      activeDays: loggedActiveDays + 2,
+      trend: [Math.max(8, loggedMinutes - 8), Math.max(14, loggedMinutes + 2), Math.max(18, loggedMinutes + 8), loggedMinutes + 14],
+    },
+    "Last 8 weeks": {
+      weeks: 8,
+      minutes: loggedMinutes + 42,
+      met: loggedMet + 1.28,
+      activeDays: loggedActiveDays + 5,
+      trend: [Math.max(16, loggedMinutes + 4), Math.max(24, loggedMinutes + 14), Math.max(34, loggedMinutes + 28), loggedMinutes + 42],
+    },
+    "Since start": {
+      weeks: 12,
+      minutes: loggedMinutes + 78,
+      met: loggedMet + 2.34,
+      activeDays: loggedActiveDays + 9,
+      trend: [Math.max(20, loggedMinutes + 12), Math.max(38, loggedMinutes + 30), Math.max(58, loggedMinutes + 54), loggedMinutes + 78],
+    },
+  };
+  const rangeStats = rangeProfiles[range] || rangeProfiles["This month"];
+  const totalMinutes = rangeStats.minutes;
+  const totalMet = rangeStats.met;
+  const activeDays = rangeStats.activeDays;
+  const minuteGoal = Math.max(weeklyMinuteGoal * rangeStats.weeks, 1);
+  const metGoal = Number((weeklyMetGoal * rangeStats.weeks).toFixed(2));
   const metPercent = Math.min(100, Math.round((totalMet / metGoal) * 100));
-  const minuteGoal = state.patientPlan.minutes * state.patientPlan.daysPerWeek;
   const minutePercent = Math.min(100, Math.round((totalMinutes / Math.max(minuteGoal, 1)) * 100));
-  const activeDays = new Set(state.activityLogs.map((log) => log.dateLabel)).size;
   const adherence = minutePercent;
   const completion = Math.min(100, Math.round((minutePercent + metPercent + adherence) / 3));
   const milestonesReached = [activeDays >= 3, totalMinutes >= 50, state.completedSessions.length >= 3].filter(Boolean).length;
@@ -1103,11 +1334,11 @@ export function ProgressClient() {
         <div className="flex items-center justify-between gap-3">
           <p className="onco-display text-lg font-extrabold">Goal trend</p>
           <div className="flex items-center gap-2 text-[10px] text-onco-muted">
-            <span className="inline-flex items-center gap-1"><span className="h-0.5 w-5 rounded bg-onco-sage" />This month</span>
+            <span className="inline-flex items-center gap-1"><span className="h-0.5 w-5 rounded bg-onco-sage" />{range}</span>
             <span className="inline-flex items-center gap-1"><span className="h-0.5 w-5 border-t-2 border-dotted border-onco-muted-light" />Goal</span>
           </div>
         </div>
-        <GoalTrendChart values={[38, 58, 76, Math.max(88, totalMinutes)]} goal={minuteGoal || 120} />
+        <GoalTrendChart values={rangeStats.trend} goal={minuteGoal || 120} />
       </Card>
       <Card className="mt-3 flex items-center gap-3 p-4">
         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-onco-sage-soft text-2xl text-onco-sage"><HeartIcon /></div>
@@ -1278,7 +1509,7 @@ export function ArtieClient() {
             >
               <MicIcon className="text-lg" />
             </button>
-            <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-onco-ink text-onco-cream" type="button" onClick={() => input.trim() && send(input)} aria-label="Send message"><ArrowUpIcon /></button>
+            <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-onco-sage text-onco-cream" type="button" onClick={() => input.trim() && send(input)} aria-label="Send message"><ArrowUpIcon /></button>
           </div>
         </div>
       </section>
@@ -1350,7 +1581,7 @@ export function LegacyGuidedWalkClient() {
   }
   return (
     <PatientShell bottomNav={false} inverted requireRole>
-      <div className="flex min-h-ios-compact flex-col justify-between text-center"><Link className="text-left text-sm text-[#C7D8CC]" href="/today">Close</Link><section><Badge tone="cream">Guided walk · Main walk</Badge><h1 className="onco-display mt-5 text-[64px] font-extrabold">{formatTime(seconds)}</h1><p className="text-[#A9C5B4]">of {patientPlan.minutes} minutes · {earned} MET dose</p><ProgressBar className="mt-5 bg-onco-cream/25" indicatorClassName="bg-onco-sand" value={seconds / 60} max={patientPlan.minutes} /></section><section><Card className="bg-onco-cream/10 text-left text-onco-cream border-none"><p>Talk test: can you talk comfortably?</p><div className="mt-3 grid grid-cols-3 gap-2">{["Easy", "A little breathless", "Struggling"].map((item) => <Button key={item} variant={pace === item ? "cream" : "outline"} className={pace !== item ? "border-onco-cream/20 text-onco-cream" : ""} onClick={() => setPace(item)}>{item}</Button>)}</div></Card><div className="mt-4 flex gap-3"><Button className="flex-1" variant="cream" onClick={() => setRunning((value) => !value)}>{running ? "Pause" : seconds ? "Resume" : "Start"}</Button><Button className="flex-1 bg-[#F0D9CE] text-[#7A3B1E]" onClick={() => setStopOpen(true)}>I need to stop</Button></div><Button className="mt-3 w-full" variant="outline" onClick={complete}>Complete walk</Button></section></div>
+      <div className="flex min-h-ios-compact flex-col justify-between text-center"><Link className="text-left text-sm text-[#C7D8CC]" href="/today">Close</Link><section><Badge tone="cream">Guided walk - Main walk</Badge><h1 className="onco-display mt-5 text-[64px] font-extrabold">{formatTime(seconds)}</h1><p className="text-[#A9C5B4]">of {patientPlan.minutes} minutes - {earned} MET dose</p><ProgressBar className="mt-5 bg-onco-cream/25" indicatorClassName="bg-onco-sand" value={seconds / 60} max={patientPlan.minutes} /></section><section><Card className="bg-onco-cream/10 text-left text-onco-cream border-none"><p>Talk test: can you talk comfortably?</p><div className="mt-3 grid grid-cols-3 gap-2">{["Easy", "A little breathless", "Struggling"].map((item) => <Button key={item} variant={pace === item ? "cream" : "outline"} className={pace !== item ? "border-onco-cream/20 text-onco-cream" : ""} onClick={() => setPace(item)}>{item}</Button>)}</div></Card><div className="mt-4 flex gap-3"><Button className="flex-1" variant="cream" onClick={() => setRunning((value) => !value)}>{running ? "Pause" : seconds ? "Resume" : "Start"}</Button><Button className="flex-1 bg-[#F0D9CE] text-[#7A3B1E]" onClick={() => setStopOpen(true)}>I need to stop</Button></div><Button className="mt-3 w-full" variant="outline" onClick={complete}>Complete walk</Button></section></div>
       <Modal open={stopOpen} title="Stop safely" onClose={() => setStopOpen(false)}><p className="text-sm text-onco-muted">Stop now. Sit if needed. If symptoms include chest pain, dizziness, or unusual shortness of breath, contact your care team.</p><Button className="mt-4" onClick={() => { demoStore.setSafetyPaused(true); setStopOpen(false); router.push("/today"); }}>Stop and save safety note</Button></Modal>
     </PatientShell>
   );
@@ -1385,9 +1616,9 @@ export function GuidedWalkClient() {
       <div className="mx-auto flex h-[calc(100dvh-0.75rem)] max-h-[720px] min-h-[620px] w-full max-w-[390px] flex-col rounded-[28px] bg-onco-sage p-3 text-center text-onco-cream shadow-onco-phone">
         <Link className="self-start rounded-full px-2 py-2 text-xs font-semibold text-[#C7D8CC] hover:text-onco-cream" href="/today">Close</Link>
         <section>
-          <Badge tone="cream">Guided walk · {stage}</Badge>
+          <Badge tone="cream">Guided walk - {stage}</Badge>
           <h1 className="onco-display mt-2 text-[48px] font-extrabold leading-none">{formatTime(seconds)}</h1>
-          <p className="mt-2 text-sm text-[#C7D8CC]">of {patientPlan.minutes} minutes · {earned} MET dose · {steps} steps</p>
+          <p className="mt-2 text-sm text-[#C7D8CC]">of {patientPlan.minutes} minutes - {earned} MET dose - {steps} steps</p>
           <div className="mt-3 grid grid-cols-4 gap-2" aria-hidden="true">
             {[0, 1, 2, 3].map((index) => (
               <span key={index} className="h-1.5 overflow-hidden rounded-full bg-onco-cream/25">
@@ -1457,7 +1688,7 @@ export function GuidedWalkClient() {
 export function GuidedWalkSuccessClient() {
   const { activityLogs } = useDemoStore();
   const latest = activityLogs[0];
-  return <PatientShell bottomNav={false} requireRole><Card tone="sage" className="mt-10 text-center"><CheckIcon className="mx-auto text-4xl" /><h1 className="onco-display mt-3 text-3xl font-extrabold">Walk complete</h1><p className="mt-2 text-sm text-[#C7D8CC]">{latest?.duration || 1} minutes logged · {latest?.metHours.toFixed(2) || "0.04"} MET-hours earned</p></Card><Link className="onco-button-primary mt-5 w-full" href="/progress">View progress</Link></PatientShell>;
+  return <PatientShell bottomNav={false} requireRole><Card tone="sage" className="mt-10 text-center"><CheckIcon className="mx-auto text-4xl" /><h1 className="onco-display mt-3 text-3xl font-extrabold">Walk complete</h1><p className="mt-2 text-sm text-[#C7D8CC]">{latest?.duration || 1} minutes logged - {latest?.metHours.toFixed(2) || "0.04"} MET-hours earned</p></Card><Link className="onco-button-primary mt-5 w-full" href="/progress">View progress</Link></PatientShell>;
 }
 
 export function DoctorSummaryClient() {
@@ -1483,22 +1714,60 @@ export function DoctorSummaryClient() {
   const fromPrescription = searchParams.get("from") === "prescription" || storedBackTo === "prescription";
   const backHref = fromPrescription ? "/prescription" : "/onboarding";
   const backText = fromPrescription ? "Back to prescription" : "Back to start";
+  const doctorName = state.patientProfile.assignedDoctor || "Dr. Maya Chen";
+  const barriers = state.onboarding.barriers.length ? state.onboarding.barriers : ["No barriers selected"];
+  const questions = ["Any activity restrictions?", "Is neuropathy affecting fall risk?", "Which symptoms should make me stop and call?"];
   return (
     <PatientShell bottomNav={false} requireRole>
-      <Link className="mb-4 inline-flex rounded-full bg-onco-sage-soft px-3 py-2 text-sm font-semibold text-onco-sage" href={backHref}>
+      <Link className="mb-4 inline-flex min-h-10 items-center rounded-full bg-onco-sage-soft px-3 text-sm font-semibold text-onco-sage" href={backHref}>
         {"<"} {backText}
       </Link>
-      <h1 className="onco-display text-[22px] font-extrabold">Doctor summary</h1>
-      <Card className="mt-5 space-y-3">
-        <Summary label="Symptoms" text={symptoms} />
-        <Summary label="Safety flags" text={safetyFlags} />
+      <h1 className="onco-display text-[28px] font-extrabold">Doctor summary</h1>
+      <p className="mt-1 text-sm leading-6 text-onco-muted">Ready to share with {doctorName}.</p>
+      <Card tone="sage" className="mt-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.06em] text-onco-cream/70">Patient plan</p>
+        <h2 className="onco-display mt-2 text-2xl font-extrabold">{state.patientProfile.name || "Patient"}</h2>
+        <p className="mt-2 text-sm text-onco-cream/85">{state.patientPlan.activity} {state.patientPlan.minutes} min - {state.patientPlan.daysPerWeek} days/week</p>
+        <div className="mt-4 rounded-2xl bg-onco-cream/12 p-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-cream/65">Goal</p>
+          <p className="mt-1 text-sm leading-5 text-onco-cream">{state.onboarding.goalAnchor}</p>
+        </div>
       </Card>
-      <Card className="mt-5 space-y-3">
-        <Summary label="Baseline assessment" text={baselineText} />
-        <Summary label="Phase I target" text={`Progress gradually toward +10 MET-hrs/week above the ${baselineMet || 0} MET-hrs/week baseline.`} />
+      <Card className="mt-4">
+        <DoctorSummarySection title="Safety" items={[symptoms, safetyFlags]} />
       </Card>
-      <Card className="mt-5 space-y-3"><Summary label="Context" text={`${state.onboarding.cancerType}, ${state.onboarding.treatmentStatus}. Goal: ${state.onboarding.goalAnchor}`} /><Summary label="Current prescription" text={`${state.patientPlan.activity} · ${state.patientPlan.daysPerWeek} days/wk · ${state.patientPlan.minutes} min · ${state.patientPlan.metHours} MET-hrs/wk.`} /><Summary label="Adherence" text={`${minutes} minutes logged · ${met.toFixed(2)} MET-hours earned.`} /><Summary label="Symptoms & barriers" text={state.onboarding.barriers.join(", ")} /><Summary label="Questions for doctor" text="Any activity restrictions? Is neuropathy affecting fall risk? Which symptoms should make me stop and call?" /></Card>
-      <div className="mt-4 grid gap-3"><Button onClick={() => { void navigator.clipboard?.writeText(summary); demoStore.toast("Copied for MyChart"); }}>Copy for MyChart</Button><Button variant="outline" onClick={() => demoStore.toast("PDF export prepared.", "info")}>PDF</Button><Link className="onco-button-outline w-full" href={backHref}>{backText}</Link></div>
+      <Card className="mt-4">
+        <DoctorSummarySection
+          title="Baseline"
+          items={[
+            `${state.onboarding.previousActivity || "Baseline not selected"} before cancer.`,
+            state.onboarding.currentCapacity || "Current capacity not entered.",
+            `${baselineMet || 0} MET-hrs/week baseline estimate.`,
+            `${state.onboarding.weeklyWalkingMinutes || 0} walking min/wk, ${state.onboarding.weeklyOtherActivityMinutes || 0} other min/wk.`,
+          ]}
+        />
+      </Card>
+      <Card className="mt-4">
+        <DoctorSummarySection
+          title="Prescription"
+          items={[
+            `${state.patientPlan.activity} - ${state.patientPlan.minutes} min, ${state.patientPlan.daysPerWeek} days/week.`,
+            `${state.patientPlan.intensity} - ${state.patientPlan.metHours} MET-hrs/wk.`,
+            `${minutes} minutes logged - ${met.toFixed(2)} MET-hours earned.`,
+          ]}
+        />
+      </Card>
+      <Card className="mt-4">
+        <DoctorSummarySection title="Patient context" items={[`${state.onboarding.cancerType}, ${state.onboarding.treatmentStatus}.`, `Barriers: ${barriers.join(", ")}.`]} />
+      </Card>
+      <Card className="mt-4">
+        <DoctorSummarySection title="Questions for doctor" items={questions} />
+      </Card>
+      <div className="mt-5 grid gap-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <Button onClick={() => { void navigator.clipboard?.writeText(summary); demoStore.toast("Copied for MyChart"); }}>Copy for MyChart</Button>
+        <Button variant="outline" onClick={() => demoStore.toast("PDF export prepared.", "info")}>Download PDF</Button>
+        <Link className="onco-button-outline w-full" href={backHref}>{backText}</Link>
+      </div>
       <Modal open={share} title="Share summary" onClose={() => setShare(false)}><p className="text-sm text-onco-muted">Send this summary to your care team for plan review.</p><Button className="mt-4" onClick={() => { demoStore.sharePatientDetailsWithDoctor(); setShare(false); }}>Send to doctor for review</Button></Modal>
     </PatientShell>
   );
@@ -1540,7 +1809,7 @@ function LegacyCareTeamCodeModal({ open, onClose, onSuccess }: { open: boolean; 
   );
 }
 
-function SelfStartModal({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess: () => void }) {
+export function SelfStartModal({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess: () => void }) {
   const state = useDemoStore();
   const [firstName, setFirstName] = useState(state.patientIdentity?.firstName || state.patientProfile.name?.split(/\s+/)[0] || "");
   const [contact, setContact] = useState(state.patientIdentity?.contact || state.patientProfile.email || "");
@@ -1586,7 +1855,7 @@ function SelfStartModal({ open, onClose, onSuccess }: { open: boolean; onClose: 
   );
 }
 
-function CareTeamCodeModal({ initialStage = "entry", open, onClose, onSuccess }: { initialStage?: "entry" | "forgot"; open: boolean; onClose: () => void; onSuccess: (nextStep: number) => void }) {
+export function CareTeamCodeModal({ initialStage = "entry", open, onClose, onSuccess }: { initialStage?: "entry" | "forgot"; open: boolean; onClose: () => void; onSuccess: (nextStep: number) => void }) {
   const state = useDemoStore();
   const router = useRouter();
   const [code, setCode] = useState("");
@@ -1617,6 +1886,7 @@ function CareTeamCodeModal({ initialStage = "entry", open, onClose, onSuccess }:
     setError("");
     if (initialStage === "entry") {
       setCode("SAM-GVOC-7429");
+      setVerify("");
     }
     if (initialStage === "forgot") {
       setRecoveryEmail("");
@@ -1686,6 +1956,7 @@ function CareTeamCodeModal({ initialStage = "entry", open, onClose, onSuccess }:
           <Button className="mt-4 w-full" onClick={() => {
             const normalized = code.trim().toUpperCase();
             if (demoStore.submitCareCode(normalized)) {
+              setVerify(normalized === "SAM-GVOC-7429" ? "1974" : "");
               setStage("invite");
               return;
             }
@@ -1864,7 +2135,7 @@ export function ProfileClient() {
       </Card>
       <Card className="mt-4">
         <p className="font-semibold">Support person</p>
-        <p className="mt-2 text-sm text-onco-muted">{support ? `${support.name} · ${support.relationship} · Invite sent · pending` : "No support person added yet."}</p>
+        <p className="mt-2 text-sm text-onco-muted">{support ? `${support.name} - ${support.relationship} - Invite sent - pending` : "No support person added yet."}</p>
       </Card>
       <Link className="onco-button-outline mt-4 w-full" href="/privacy-sharing">Privacy & sharing</Link>
     </PatientShell>
@@ -1889,6 +2160,7 @@ function DeviceConnectivityContent({ fromOnboarding, requestedSource, state }: {
   const connected = state.connectedDevices.filter((device) => device.connected);
   const activeSource = connected.find((device) => device.name === state.onboarding.trackingType) || connected[0] || state.connectedDevices.find((device) => device.name === "Manual");
   const latestLog = state.activityLogs[0];
+  const returnToTracking = fromOnboarding || Boolean(requestedSource);
 
   useEffect(() => {
     if (!requestedSource || handledSource === requestedSource) return;
@@ -1898,26 +2170,31 @@ function DeviceConnectivityContent({ fromOnboarding, requestedSource, state }: {
     setHandledSource(requestedSource);
   }, [handledSource, requestedSource, state.connectedDevices]);
 
+  function returnToOnboardingTracking() {
+    window.sessionStorage.setItem("oncoContinueOnboarding", "1");
+    router.push("/onboarding?step=tracking");
+  }
+
   function connectAndClose(device: ConnectedDevice) {
     demoStore.connectDevice(device.name);
     setSelectedDevice(null);
-    if (fromOnboarding) router.push("/onboarding?step=tracking");
+    if (returnToTracking) returnToOnboardingTracking();
   }
 
   function syncAndClose(device: ConnectedDevice) {
     demoStore.syncDevice(device.name);
     setSelectedDevice(null);
-    if (fromOnboarding) router.push("/onboarding?step=tracking");
+    if (returnToTracking) returnToOnboardingTracking();
   }
 
   function useManualAndReturn() {
     demoStore.connectDevice("Manual");
     setSelectedDevice(null);
-    if (fromOnboarding) router.push("/onboarding?step=tracking");
+    if (returnToTracking) returnToOnboardingTracking();
   }
 
   return (
-    <PatientShell bottomNav={!fromOnboarding} hidePatientHeader={fromOnboarding} requireRole>
+    <PatientShell bottomNav={!returnToTracking} hidePatientHeader={returnToTracking} requireRole>
       <h1 className="onco-display text-[28px] font-extrabold">Connected devices</h1>
       <p className="mt-1 text-sm leading-6 text-onco-muted">Choose how OncoMotionRx reads activity for your weekly movement plan.</p>
       <Card tone="sage" className="mt-5">
@@ -1932,7 +2209,7 @@ function DeviceConnectivityContent({ fromOnboarding, requestedSource, state }: {
           <Badge tone={activeSource?.connected ? "sage" : "sand"}>{activeSource?.connected ? "Active" : "Manual"}</Badge>
         </div>
         <div className="mt-4 rounded-2xl bg-onco-cream/10 p-3 text-sm text-[#C7D8CC]">
-          Latest detected activity: {latestLog ? `${latestLog.activity} ${latestLog.duration} min · ${latestLog.metHours.toFixed(2)} MET-hours` : "No activity yet"}
+          Latest detected activity: {latestLog ? `${latestLog.activity} ${latestLog.duration} min - ${latestLog.metHours.toFixed(2)} MET-hours` : "No activity yet"}
         </div>
       </Card>
       <Card className="mt-4 space-y-3">
@@ -1949,7 +2226,7 @@ function DeviceConnectivityContent({ fromOnboarding, requestedSource, state }: {
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold">{device.name}</p>
-                  <p className="mt-1 text-xs leading-5 text-onco-muted">{device.connected ? `Connected · last sync ${device.lastSync || "not yet"}` : "Not connected"}</p>
+                  <p className="mt-1 text-xs leading-5 text-onco-muted">{device.connected ? `Connected - last sync ${device.lastSync || "not yet"}` : "Not connected"}</p>
                 </div>
               </div>
               <Badge tone={device.connected ? "sage" : "sand"}>{device.connected ? "On" : "Off"}</Badge>
@@ -1961,8 +2238,8 @@ function DeviceConnectivityContent({ fromOnboarding, requestedSource, state }: {
           </Card>
         ))}
       </div>
-      {fromOnboarding ? (
-        <Button className="mt-5 w-full" onClick={() => router.push("/onboarding?step=tracking")}>
+      {returnToTracking ? (
+        <Button className="mt-5 w-full" onClick={returnToOnboardingTracking}>
           Back
         </Button>
       ) : null}
@@ -1979,7 +2256,7 @@ function DeviceConnectivityContent({ fromOnboarding, requestedSource, state }: {
             </Card>
             <Card className="mt-3">
               <p className="font-semibold">Sample sync result</p>
-              <p className="mt-2 text-sm leading-6 text-onco-muted">8 minutes easy walking · 0.33 MET-hours · no symptoms reported.</p>
+              <p className="mt-2 text-sm leading-6 text-onco-muted">8 minutes easy walking - 0.33 MET-hours - no symptoms reported.</p>
             </Card>
             <div className="mt-4 grid gap-2">
               <Button className="w-full" onClick={() => connectAndClose(selectedDevice)}>Allow and connect</Button>
@@ -2005,7 +2282,7 @@ export function NotificationsClient() {
           <Card key={item.id} className={cn(item.read && "opacity-65")}>
             <div className="flex items-start justify-between gap-3">
               <button className="text-left" type="button" onClick={() => { demoStore.markNotificationRead(item.id); setActive(item.id); }}>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-onco-muted-light">{item.type} · {item.createdAt}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-onco-muted-light">{item.type} - {item.createdAt}</p>
                 <p className="mt-1 font-semibold">{item.title}</p>
                 <p className="mt-1 text-sm text-onco-muted">{item.detail}</p>
               </button>
@@ -2058,11 +2335,11 @@ function SupportModal({ open, onClose }: { open: boolean; onClose: () => void })
   const [relationship, setRelationship] = useState("Sister");
   const [contact, setContact] = useState("maya@example.com");
   const [supportType, setSupportType] = useState("Reminders");
-  return <Modal open={open} title="Add support person" onClose={onClose}><input className="onco-input" value={name} onChange={(event) => setName(event.target.value)} /><input className="onco-input mt-3" value={relationship} onChange={(event) => setRelationship(event.target.value)} /><input className="onco-input mt-3" value={contact} onChange={(event) => setContact(event.target.value)} /><Select className="mt-3 block" label="Support type" value={supportType} onChange={setSupportType} options={["Reminders", "Walking buddy", "Care updates"].map((value) => ({ label: value, value }))} /><Button className="mt-4 w-full" onClick={() => { if (!name || !contact) { demoStore.toast("Name and contact required", "warning"); return; } demoStore.setSupportPerson({ name, relationship, contact, supportType, invitePending: true }); demoStore.toast("Invite sent · pending"); onClose(); }}>Send invite</Button></Modal>;
+  return <Modal open={open} title="Add support person" onClose={onClose}><input className="onco-input" value={name} onChange={(event) => setName(event.target.value)} /><input className="onco-input mt-3" value={relationship} onChange={(event) => setRelationship(event.target.value)} /><input className="onco-input mt-3" value={contact} onChange={(event) => setContact(event.target.value)} /><Select className="mt-3 block" label="Support type" value={supportType} onChange={setSupportType} options={["Reminders", "Walking buddy", "Care updates"].map((value) => ({ label: value, value }))} /><Button className="mt-4 w-full" onClick={() => { if (!name || !contact) { demoStore.toast("Name and contact required", "warning"); return; } demoStore.setSupportPerson({ name, relationship, contact, supportType, invitePending: true }); demoStore.toast("Invite sent - pending"); onClose(); }}>Send invite</Button></Modal>;
 }
 
 function ScreenTitle({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
-  return <div><h1 className="onco-mobile-title">{title}</h1><p className="onco-mobile-subtitle">{subtitle}</p>{children}</div>;
+  return <div><h1 className="onco-display text-[30px] font-extrabold leading-[1.05] tracking-normal text-onco-sage">{title}</h1><p className="onco-mobile-subtitle">{subtitle}</p>{children}</div>;
 }
 
 function ChipGroup({ label, values, selected, onToggle, className, dense = true }: { label: string; values: string[]; selected: string[]; onToggle: (value: string) => void; className?: string; dense?: boolean }) {
@@ -2126,6 +2403,53 @@ function ChipGrid({ values, selected, onToggle }: { values: string[]; selected: 
   );
 }
 
+function BaselineActivityIcon({ label, selected }: { label: string; selected: boolean }) {
+  const commonProps = {
+    className: "h-8 w-8",
+    fill: "none",
+    stroke: "currentColor",
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    strokeWidth: 2.4,
+    viewBox: "0 0 56 56",
+  };
+
+  return (
+    <span aria-hidden="true" className={cn("grid h-9 w-9 shrink-0 place-items-center text-onco-sage", selected && "text-onco-cream")}>
+      {label === "Very active" ? (
+        <svg {...commonProps}>
+          <circle cx="30" cy="10" r="3.5" fill="currentColor" stroke="none" />
+          <path d="M29 16 23 27l8 5" />
+          <path d="M24 26 15 31" />
+          <path d="M31 32 42 42" />
+          <path d="M28 31 19 44" />
+          <path d="M28 18 39 22" />
+          <path d="M13 43h8M37 43h8" />
+        </svg>
+      ) : null}
+      {label === "Some movement" ? (
+        <svg {...commonProps}>
+          <circle cx="28" cy="11" r="3.4" fill="currentColor" stroke="none" />
+          <path d="M27.5 17.5 23.5 28.5l6 4.5" />
+          <path d="M24 28 17 37" />
+          <path d="M30 33 38 44" />
+          <path d="M27.5 20 36 24.5" />
+        </svg>
+      ) : null}
+      {label === "Not very active" ? (
+        <svg {...commonProps}>
+          <circle cx="28" cy="11" r="3.4" fill="currentColor" stroke="none" />
+          <path d="M23 18v13h13" />
+          <path d="M20 34h18" />
+          <path d="M23 44h14" />
+          <path d="M23 25h-5v16" />
+          <path d="M33 18v10" />
+          <path d="M32 28h7" />
+        </svg>
+      ) : null}
+    </span>
+  );
+}
 function MovementOptionIcon({ label, selected }: { label: string; selected: boolean }) {
   const commonProps = {
     className: "h-8 w-8",
@@ -2133,7 +2457,7 @@ function MovementOptionIcon({ label, selected }: { label: string; selected: bool
     stroke: "currentColor",
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
-    strokeWidth: 2,
+    strokeWidth: 2.1,
     viewBox: "0 0 56 56",
   };
 
@@ -2141,35 +2465,34 @@ function MovementOptionIcon({ label, selected }: { label: string; selected: bool
     <span
       aria-hidden="true"
       className={cn(
-        "grid h-8 w-8 shrink-0 place-items-center text-onco-sage",
-        selected && "text-onco-cream",
+        "grid h-10 w-10 shrink-0 place-items-center rounded-full bg-onco-sage-soft text-onco-sage transition-colors",
+        selected && "bg-onco-cream/15 text-onco-cream",
       )}
     >
       {label === "Walking" ? (
-        <svg {...commonProps}><circle cx="27.5" cy="13" r="3.2" fill="currentColor" stroke="none" /><path d="M27 18L23.5 26L28.5 31" /><path d="M24.2 25.2L18.5 31" /><path d="M28.5 31L35.5 39" /><path d="M26.4 31L20 40" /><path d="M26.2 20.5L34 24.5" /></svg>
+        <svg {...commonProps}><circle cx="28" cy="13" r="3" fill="currentColor" stroke="none" /><path d="M27.2 18.5 23.2 27.5 28.5 31.5" /><path d="M24 26.5 18 32.5" /><path d="M28.5 31.5 35 40" /><path d="M26.2 31 21 41" /><path d="M27 20.5 34.5 24.5" /></svg>
       ) : null}
       {label === "Gardening" ? (
-        <svg {...commonProps}><path d="M18 30H38V37C38 39 36 41 34 41H22C20 41 18 39 18 37V30Z" /><path d="M28 30V18" /><path d="M27.5 24C23 24 20 21 19 18C23 17 26 18.5 28 22" /><path d="M28.5 24C33 24 36 21 37 18C33 17 30 18.5 28 22" /></svg>
+        <svg {...commonProps}><path d="M18 31h20l-2 10H20l-2-10Z" /><path d="M16.5 28h23" /><path d="M28 28V16" /><path d="M27.5 23c-5 .2-8.2-3-9.2-7.2 4.6-.4 8 1.8 9.4 6" /><path d="M28.5 23c5 .2 8.2-3 9.2-7.2-4.6-.4-8 1.8-9.4 6" /></svg>
       ) : null}
       {label === "Cycling" ? (
-        <svg {...commonProps}><circle cx="18" cy="37" r="6" /><circle cx="38" cy="37" r="6" /><circle cx="28" cy="17" r="3.2" fill="currentColor" stroke="none" /><path d="M18 37L25 25L34 37H24L30 26H36M28 21L30 26" /></svg>
+        <svg {...commonProps}><circle cx="18" cy="37" r="6.2" /><circle cx="38" cy="37" r="6.2" /><circle cx="30" cy="15" r="3" fill="currentColor" stroke="none" /><path d="M18 37h9l5-11h-8l-6 11Z" /><path d="M27 37 22 25M32 26l6 11M25 22h8" /></svg>
       ) : null}
       {label === "Swimming" ? (
-        <svg {...commonProps}><circle cx="29" cy="17" r="3.2" fill="currentColor" stroke="none" /><path d="M21 25C24 22 30 22 36 26" /><path d="M12 28C16 24 20 32 24 28C28 24 32 32 36 28C40 24 44 32 48 28" /><path d="M12 36C16 32 20 40 24 36C28 32 32 40 36 36C40 32 44 40 48 36" /></svg>
+        <svg {...commonProps}><circle cx="30" cy="17" r="3" fill="currentColor" stroke="none" /><path d="M20 25c3.5-3.5 8.5-3.8 15-1" /><path d="M11 31c4-3.5 8 3.5 12 0s8 3.5 12 0 8 3.5 12 0" /><path d="M11 38c4-3.5 8 3.5 12 0s8 3.5 12 0 8 3.5 12 0" /></svg>
       ) : null}
       {label === "Gym" ? (
-        <svg {...commonProps}><path d="M17 28H39" /><rect x="11" y="23" width="5" height="10" rx="1.5" /><rect x="17" y="20" width="5" height="16" rx="1.5" /><rect x="34" y="20" width="5" height="16" rx="1.5" /><rect x="40" y="23" width="5" height="10" rx="1.5" /></svg>
+        <svg {...commonProps}><path d="M12 28h32" /><path d="M13.5 22v12M19 19v18M37 19v18M42.5 22v12" /><path d="M24 28h8" /></svg>
       ) : null}
       {label === "At home" ? (
-        <svg {...commonProps}><path d="M15 29L28 17L41 29" /><path d="M19 28V41H37V28" /><path d="M25 41V34H31V41" /></svg>
+        <svg {...commonProps}><path d="M15 29 28 17l13 12" /><path d="M19 28.5V41h18V28.5" /><path d="M25 41v-7h6v7" /></svg>
       ) : null}
       {label === "Stretching" ? (
-        <svg {...commonProps}><circle cx="28" cy="14" r="3.2" fill="currentColor" stroke="none" /><path d="M28 19V29M28 23L20 19M28 23L36 19M28 29L20 40M28 29L37 40" /></svg>
+        <svg {...commonProps}><circle cx="28" cy="14" r="3" fill="currentColor" stroke="none" /><path d="M28 19v10" /><path d="M28 23 19 19" /><path d="M28 23l9-4" /><path d="M28 29 20 40" /><path d="M28 29l9 11" /></svg>
       ) : null}
     </span>
   );
 }
-
 function MovementWalkingIcon() {
   return (
     <svg className="h-9 w-9" viewBox="0 0 44 44" fill="none">
@@ -2485,7 +2808,23 @@ function NumberField({ label, value, onChange, placeholder }: { label: string; v
 }
 
 function ChatBubble({ sender, text }: { sender: "user" | "artie"; text: string }) {
-  return <div className={cn("flex", sender === "user" ? "justify-end" : "justify-start")}><div className={cn("max-w-[84%] rounded-2xl px-4 py-3 text-sm leading-6", sender === "user" ? "bg-onco-sage text-onco-cream rounded-tr" : "border border-onco-line bg-white rounded-tl")}>{text}</div></div>;
+  if (sender === "artie") {
+    return (
+      <div className="flex items-start gap-2">
+        <ArtieAvatar size="sm" className="mt-1" />
+        <div className="max-w-[84%] rounded-2xl rounded-tl border border-onco-line bg-white px-4 py-3 text-sm leading-6">
+          {text}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex justify-end">
+      <div className="max-w-[84%] rounded-2xl rounded-tr bg-onco-sage px-4 py-3 text-sm leading-6 text-onco-cream">
+        {text}
+      </div>
+    </div>
+  );
 }
 
 function ActivityTable({ logs }: { logs: ActivityLog[] }) {
@@ -2494,6 +2833,22 @@ function ActivityTable({ logs }: { logs: ActivityLog[] }) {
 
 function Summary({ label, text }: { label: string; text: string }) {
   return <div className="p-1"><p className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-onco-ink">{label}</p><p className="mt-1 text-[12.5px] leading-5 text-[#3A403C]">{text}</p></div>;
+}
+
+function DoctorSummarySection({ title, items }: { title: string; items: string[] }) {
+  return (
+    <section>
+      <h2 className="font-extrabold">{title}</h2>
+      <div className="mt-3 space-y-2">
+        {items.map((item) => (
+          <div className="flex gap-2 text-sm leading-6 text-onco-muted" key={item}>
+            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-onco-sage" />
+            <p>{item}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 function SelectionNote({ children }: { children: React.ReactNode }) {
@@ -2635,4 +2990,36 @@ function formatTime(seconds: number) {
   const sec = (seconds % 60).toString().padStart(2, "0");
   return `${min}:${sec}`;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
