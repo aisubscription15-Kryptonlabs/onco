@@ -194,6 +194,7 @@ export const initialDemoState: DemoState = {
     previousActivity: "Some movement",
     currentCapacity: "Walking to the mailbox wipes me out some days. I used to garden a lot and I miss it.",
     weeklyWalkingMinutes: "30",
+    walkingPace: "Normal",
     weeklyOtherActivityMinutes: "20",
     baselineIntensity: "Mostly light",
     averageDailySteps: "2800",

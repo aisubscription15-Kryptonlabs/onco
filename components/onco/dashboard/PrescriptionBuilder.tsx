@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { Button } from "@/components/onco/ui/Button";
@@ -63,7 +63,7 @@ export function PrescriptionBuilder({ patient }: { patient: DemoPatient }) {
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         <Card tone="cream"><p className="text-xs text-onco-muted">Weekly minutes</p><p className="onco-display text-2xl font-bold">{weeklyMinutes}</p></Card>
-        <Card tone="cream"><p className="text-xs text-onco-muted">Estimated MET-hours</p><p className="onco-display text-2xl font-bold">{weeklyMet}</p></Card>
+        <Card tone="cream"><p className="text-xs text-onco-muted">Estimated MET-hours/week</p><p className="onco-display text-2xl font-bold">{weeklyMet}</p></Card>
       </div>
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" onClick={() => setConfirm("draft")}>Save as draft</Button>
@@ -81,4 +81,5 @@ export function PrescriptionBuilder({ patient }: { patient: DemoPatient }) {
     </Card>
   );
 }
+
 

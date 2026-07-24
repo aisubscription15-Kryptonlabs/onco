@@ -29,6 +29,7 @@
   }
 
   html {
+    background-color: #FBF7EF;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     touch-action: manipulation;
@@ -143,6 +144,8 @@
     scrollbar-width: none;
     touch-action: pan-y;
     position: relative;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 
   .ios-patient-page::-webkit-scrollbar {
@@ -151,10 +154,11 @@
 
   .ios-patient-viewport {
     min-height: 100%;
+    width: min(100%, 430px);
     overflow-x: hidden;
     overflow-y: visible;
     -webkit-overflow-scrolling: touch;
-    scrollbar-gutter: stable;
+    scrollbar-gutter: auto;
     overflow-wrap: anywhere;
     word-break: normal;
     box-sizing: border-box;
@@ -201,7 +205,30 @@
       min-height: -webkit-fill-available;
     }
   }
+  .ios-patient-viewport .onco-card,
+  .ios-patient-viewport .onco-card-sage,
+  .ios-patient-viewport .onco-button-primary,
+  .ios-patient-viewport .onco-button-outline,
+  .ios-patient-viewport .onco-button-cream,
+  .ios-patient-viewport .onco-option-row,
+  .ios-patient-viewport .onco-input {
+    max-width: 100%;
+  }
 
+  .ios-patient-viewport button,
+  .ios-patient-viewport a,
+  .ios-patient-viewport input,
+  .ios-patient-viewport textarea,
+  .ios-patient-viewport select {
+    font-family: inherit;
+  }
+
+  .ios-patient-viewport button,
+  .ios-patient-viewport a,
+  .ios-patient-viewport [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
   .onco-page h1,
   .onco-page h2,
   .onco-page h3,
@@ -251,6 +278,10 @@
 
   .onco-pill {
     @apply inline-flex items-center gap-1.5 rounded-full border border-onco-line bg-white px-3.5 py-2 text-[13px] font-semibold text-[#3A403C];
+    min-height: 36px;
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.2;
   }
 
   .onco-pill-active {
@@ -862,6 +893,30 @@
     }
   }
 
+  @media (max-width: 360px) {
+    .safe-area-px {
+      padding-left: max(0.75rem, env(safe-area-inset-left));
+      padding-right: max(0.75rem, env(safe-area-inset-right));
+    }
+
+    .onco-card,
+    .onco-card-sage {
+      padding: 0.875rem;
+    }
+
+    .onco-mobile-title {
+      font-size: 26px;
+      line-height: 1.08;
+    }
+
+    .onco-button-primary,
+    .onco-button-outline,
+    .onco-button-cream {
+      min-height: 46px;
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
   .scrollbar-thin {
     scrollbar-width: thin;
   }
@@ -917,6 +972,9 @@
   background: rgb(74 78 84);
 }
  
+
+
+
 
 
 

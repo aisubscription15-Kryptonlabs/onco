@@ -22,6 +22,7 @@ import type {
   SiteRequest,
   PlatformSite,
 } from "./demo-types";
+import { estimateBaselineMetHours, formatMetHoursPerActiveDay, formatMetHoursPerWeek, normalizeWeeklyPrescriptionMet } from "./met";
 
 const STORAGE_KEY = "oncomotionrx-demo-state";
 
@@ -44,12 +45,7 @@ function nowLabel() {
   return "Just now";
 }
 
-function estimateBaselineMetHours(answers: OnboardingAnswers) {
-  const walkingMinutes = Number(answers.weeklyWalkingMinutes) || 0;
-  const otherMinutes = Number(answers.weeklyOtherActivityMinutes) || 0;
-  const intensityMet = answers.baselineIntensity === "Hard exercise sometimes" ? 4 : answers.baselineIntensity === "Some moderate" ? 3.3 : 2.3;
-  return Number((((walkingMinutes * 2.5) + (otherMinutes * intensityMet)) / 60).toFixed(1));
-}
+
 
 function cleanOnboardingAnswers(): OnboardingAnswers {
   return {
@@ -59,6 +55,7 @@ function cleanOnboardingAnswers(): OnboardingAnswers {
     previousActivity: "",
     currentCapacity: "",
     weeklyWalkingMinutes: "",
+    walkingPace: "Normal",
     weeklyOtherActivityMinutes: "",
     baselineIntensity: "Mostly light",
     averageDailySteps: "",
@@ -143,7 +140,7 @@ function currentPatientChatKey(current: DemoState) {
 
 function syncCareCodeSnapshot(current: DemoState) {
   const code = activeCareCode(current);
-  if (!code || code === "SAM-GVOC-7429") return current.acceptedCareCodes;
+  if (!code) return current.acceptedCareCodes;
   const snapshot = {
     code,
     patientProfile: patientProfileWithIdentityContact(current),
@@ -309,6 +306,11 @@ export const demoStore = {
       careCode: "",
       generatedCareCode: null,
       patientIdentity: null,
+      activityLogs: [],
+      symptomReports: [],
+      safetyPaused: false,
+      completedSessions: [1, 2],
+      sessionProgress: { "3": 0 },
       patientProfile: {
         ...current.patientProfile,
         name: "",
@@ -341,6 +343,11 @@ export const demoStore = {
       return {
         ...current,
         patientIdentity: identity,
+        activityLogs: [],
+        symptomReports: [],
+        safetyPaused: false,
+        completedSessions: [1, 2],
+        sessionProgress: { "3": 0 },
         patientProfile: {
           ...current.patientProfile,
           name: identity.firstName || current.patientProfile.name,
@@ -372,6 +379,7 @@ export const demoStore = {
     } while (state.acceptedCareCodes.some((item) => item.code === generatedCareCode));
     setState((current) => ({
       ...current,
+      careCode: generatedCareCode,
       generatedCareCode,
       acceptedCareCodes: [
         {
@@ -393,12 +401,15 @@ export const demoStore = {
     return generatedCareCode;
   },
   completeLinkedPatientOnboarding() {
-    setState((current) => ({
-      ...current,
-      generatedCareCode: null,
-      completedOnboarding: true,
-      toast: { id: Date.now(), message: "Clinic-linked program ready", tone: "success" },
-    }));
+    setState((current) => {
+      const next: DemoState = {
+        ...current,
+        generatedCareCode: null,
+        completedOnboarding: true,
+        toast: { id: Date.now(), message: "Clinic-linked program ready", tone: "success" },
+      };
+      return { ...next, acceptedCareCodes: syncCareCodeSnapshot(next) };
+    });
   },
   beginCareCode() {
     setState((current) => ({
@@ -451,11 +462,20 @@ export const demoStore = {
       code: nextCode,
       createdAt: nowLabel(),
     };
+    const matchProfileEmail = match.patientProfile.email?.trim().toLowerCase();
+    const matchIdentityContact = match.patientIdentity?.contact?.trim().toLowerCase();
     setState((current) => ({
       ...current,
+      careCode: current.careCode === match.code ? nextCode : current.careCode,
       acceptedCareCodes: [
         rotated,
-        ...current.acceptedCareCodes.filter((item) => item.code !== match.code),
+        ...current.acceptedCareCodes.filter((item) => {
+          const itemProfileEmail = item.patientProfile.email?.trim().toLowerCase();
+          const itemIdentityContact = item.patientIdentity?.contact?.trim().toLowerCase();
+          const samePatientByEmail = Boolean(matchProfileEmail && (itemProfileEmail === matchProfileEmail || itemIdentityContact === matchProfileEmail));
+          const samePatientByIdentity = Boolean(matchIdentityContact && (itemIdentityContact === matchIdentityContact || itemProfileEmail === matchIdentityContact));
+          return item.code !== match.code && !samePatientByEmail && !samePatientByIdentity;
+        }),
       ],
       generatedCareCode: current.generatedCareCode === match.code ? nextCode : current.generatedCareCode,
       toast: { id: Date.now(), message: "New care code generated", tone: "success" },
@@ -504,7 +524,7 @@ export const demoStore = {
       selfStarted: false,
     };
     const matchedProfile = normalized === "SAM-GVOC-7429"
-      ? sampleInviteProfile
+      ? generatedMatch?.patientProfile || sampleInviteProfile
       : generatedMatch?.patientProfile || (generatedPatternMatches ? fallbackGeneratedProfile : state.patientProfile);
     const matchedIdentityContact = generatedMatch?.patientIdentity?.contact || "";
     const correctedMatchedEmail = normalized !== "SAM-GVOC-7429" && (matchedProfile.email === sampleInviteProfile.email || !matchedProfile.email)
@@ -518,17 +538,19 @@ export const demoStore = {
       siteName: matchedProfile.siteName?.startsWith("OncoMotionRx Care Team") ? state.site.name : matchedProfile.siteName,
     };
     const matchedOnboarding = normalized === "SAM-GVOC-7429"
-      ? initialDemoState.onboarding
+      ? generatedMatch?.onboarding || initialDemoState.onboarding
       : generatedMatch?.onboarding || (generatedPatternMatches ? cleanOnboardingAnswers() : state.onboarding);
-    const matchedPlan = generatedMatch?.patientPlan || state.patientPlan;
+    const matchedPlan = normalized === "SAM-GVOC-7429"
+      ? generatedMatch?.patientPlan || initialDemoState.patientPlan
+      : generatedMatch?.patientPlan || state.patientPlan;
     const matchedActivityLogs = normalized === "SAM-GVOC-7429"
-      ? initialDemoState.activityLogs
+      ? generatedMatch?.activityLogs || initialDemoState.activityLogs
       : generatedMatch?.activityLogs || [];
     const matchedCompletedSessions = normalized === "SAM-GVOC-7429"
-      ? initialDemoState.completedSessions
+      ? generatedMatch?.completedSessions || initialDemoState.completedSessions
       : generatedMatch?.completedSessions || [];
     const matchedSessionProgress = normalized === "SAM-GVOC-7429"
-      ? initialDemoState.sessionProgress
+      ? generatedMatch?.sessionProgress || initialDemoState.sessionProgress
       : generatedMatch?.sessionProgress || {};
     if (normalized !== "SAM-GVOC-7429" && !generatedMatch && !currentGeneratedMatches && !generatedPatternMatches) {
       return false;
@@ -564,30 +586,8 @@ export const demoStore = {
   },
   verifyCareCode(value: string) {
     const generatedMatch = state.acceptedCareCodes.find((item) => item.code.toUpperCase() === state.careCode);
-    const generatedPattern = state.careCode.match(/^([A-Z]{2,})-([A-Z0-9]+)-(\d{4})$/);
-    const isFallbackGeneratedCode = Boolean(
-      !generatedMatch &&
-      generatedPattern &&
-      generatedPattern[2] === state.site.id.toUpperCase() &&
-      state.careCode !== "SAM-GVOC-7429",
-    );
-    if (isFallbackGeneratedCode) {
-      if (!/^\d{4}$/.test(value.trim())) return false;
-      setState((current) => {
-        const next = {
-          ...current,
-          patientIdentity: current.patientIdentity ? { ...current.patientIdentity, birthYear: value.trim() } : current.patientIdentity,
-          patientProfile: {
-            ...current.patientProfile,
-            birthYear: Number(value.trim()),
-            inviteVerified: true,
-            emailVerified: true,
-          },
-          toast: { id: Date.now(), message: "Care Code verified", tone: "success" as const },
-        };
-        return { ...next, acceptedCareCodes: syncCareCodeSnapshot(next) };
-      });
-      return true;
+    if (state.careCode !== "SAM-GVOC-7429" && !generatedMatch) {
+      return false;
     }
     const expectedBirthYear = String(state.patientProfile.birthYear || 1974);
     if (value.trim() !== expectedBirthYear) {
@@ -651,6 +651,11 @@ export const demoStore = {
       return {
         ...current,
         patientIdentity: identity,
+        activityLogs: [],
+        symptomReports: [],
+        safetyPaused: false,
+        completedSessions: [1, 2],
+        sessionProgress: { "3": 0 },
         patientProfile: {
           ...current.patientProfile,
           name: identity.firstName,
@@ -861,7 +866,8 @@ export const demoStore = {
     const daysPerWeek = hasBarrier("Fatigue", "Nausea") ? 3 : baseline >= 6 && !hasBarrier("No time") ? 4 : 3;
     const intensity: PatientPlan["intensity"] = baseline >= 6 && !hasBarrier("Fear of overdoing it") ? "Moderate" : baseline > 0 ? "Easy-to-moderate" : "Easy";
     if (adaptations.length === 0) addAdaptation("starts gently");
-    const metHours = Number(((met * minutes * daysPerWeek) / 60).toFixed(2));
+    const rawMetHours = Number(((met * minutes * daysPerWeek) / 60).toFixed(2));
+    const metHours = normalizeWeeklyPrescriptionMet(rawMetHours, baseline);
     setState((current) => {
       const next: DemoState = {
         ...current,
@@ -873,6 +879,7 @@ export const demoStore = {
           metHours,
           adaptations,
         },
+        activityLogs: [],
         safetyPaused: answers.redFlags.length > 0,
       };
       return { ...next, acceptedCareCodes: syncCareCodeSnapshot(next) };
@@ -1072,7 +1079,7 @@ export const demoStore = {
   sharePatientDetailsWithDoctor() {
     setState((current) => {
       const baselineMet = estimateBaselineMetHours(current.onboarding);
-      const prescription = `${current.patientPlan.activity} ${current.patientPlan.minutes} min, ${current.patientPlan.daysPerWeek} days/week, ${current.patientPlan.metHours} MET-hrs/wk`;
+      const prescription = `${current.patientPlan.activity} ${current.patientPlan.minutes} min, ${current.patientPlan.daysPerWeek} days/week, ${formatMetHoursPerWeek(current.patientPlan.metHours)}, ${formatMetHoursPerActiveDay(current.patientPlan.metHours, current.patientPlan.daysPerWeek)}`;
       const patientName = current.patientProfile.name || "Patient";
       const rosterActivity = ["Walking", "Cycling", "Strength", "Gardening"].includes(current.patientPlan.activity) ? current.patientPlan.activity as DemoState["patients"][number]["prescription"]["activity"] : "Walking";
       return {
@@ -1102,7 +1109,7 @@ export const demoStore = {
             doctorName: current.patientProfile.assignedDoctor || "Dr. Maya Chen",
             clinicName: current.patientProfile.siteName || current.patientProfile.careTeam || current.site.name,
             context: `${current.onboarding.cancerType}, ${current.onboarding.treatmentStatus}`,
-            baseline: `${baselineMet || 0} MET-hrs/week baseline; ${current.onboarding.weeklyWalkingMinutes || 0} walking min/wk; ${current.onboarding.weeklyOtherActivityMinutes || 0} other min/wk`,
+            baseline: `${formatMetHoursPerWeek(baselineMet || 0)} baseline; ${current.onboarding.weeklyWalkingMinutes || 0} walking minutes/week (${current.onboarding.walkingPace || "Normal"}); ${current.onboarding.weeklyOtherActivityMinutes || 0} other activity minutes/week (${current.onboarding.baselineIntensity})`,
             preferences: current.onboarding.preferences.length ? current.onboarding.preferences.join(", ") : "Not selected",
             barriers: current.onboarding.barriers.length ? current.onboarding.barriers.join(", ") : "None selected",
             prescription,

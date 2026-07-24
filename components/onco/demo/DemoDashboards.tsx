@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -239,8 +239,8 @@ function DoctorSummary({ patient }: { patient: DemoPatient }) {
       <h2 className="onco-display flex items-center gap-2 text-2xl font-extrabold"><AiAgentIcon className="text-onco-sage" />One-page doctor summary</h2>
       {[
         ["Patient context", `${patient.cancerType}, ${patient.treatmentStatus}, ${patient.phase}`],
-        ["Current prescription", `${patient.prescription.activity} · ${patient.prescription.daysPerWeek} days/wk · ${patient.prescription.minutes} min · ${patient.prescription.metHours} MET-hours`],
-        ["Adherence", `${patient.adherence}% · ${patient.activeDays} active days`],
+        ["Current prescription", `${patient.prescription.activity} - ${patient.prescription.daysPerWeek} days/week - ${patient.prescription.minutes} min - ${patient.prescription.metHours} MET-hours/week`],
+        ["Adherence", `${patient.adherence}% - ${patient.activeDays} active days`],
         ["Symptoms and barriers", patient.flags.join(", ")],
         ["Safety flags", patient.prescriptionStatus === "alert" ? "Open red-flag symptom alert" : "No open red-flag alerts"],
         ["Questions for doctor", "Activity restrictions? Neuropathy fall risk? Stop symptoms?"],
@@ -292,7 +292,7 @@ function AdminOverview() {
   const avgAdherence = Math.round(state.patients.reduce((sum, patient) => sum + patient.adherence, 0) / state.patients.length);
   return (
     <div className="space-y-5">
-      <Card tone="sage"><h2 className="onco-display text-3xl font-extrabold">Green Valley Oncology Center</h2><p className="mt-2 text-[#C7D8CC]">Austin, TX · Active · Invite code {state.site.inviteCode}</p></Card>
+      <Card tone="sage"><h2 className="onco-display text-3xl font-extrabold">Green Valley Oncology Center</h2><p className="mt-2 text-[#C7D8CC]">Austin, TX - Active - Invite code {state.site.inviteCode}</p></Card>
       <div className="grid gap-4 md:grid-cols-6">
         <MetricTrendCard label="Total patients" value={String(state.patients.length)} trend="demo roster" />
         <MetricTrendCard label="Active patients" value={String(state.patients.filter((p) => p.prescriptionStatus !== "pending-approval").length)} trend="active plans" />
@@ -473,7 +473,7 @@ function ProviderRequests() {
   const [approve, setApprove] = useState<SiteRequest | null>(null);
   const [reject, setReject] = useState<SiteRequest | null>(null);
   const [view, setView] = useState<SiteRequest | null>(null);
-  return <Card><Tabs value={tab} onChange={setTab} items={["Pending review", "Approved", "Rejected"].map((value) => ({ label: value, value }))} /><div className="mt-4"><SiteRequestQueue requests={siteRequests.filter((request) => request.status === tab)} onApprove={setApprove} onReject={setReject} onView={setView} /></div><ApproveRequestModal request={approve} onClose={() => setApprove(null)} /><RejectRequestModal request={reject} onClose={() => setReject(null)} /><Modal open={Boolean(view)} title={view?.siteName || "Request"} onClose={() => setView(null)}><p className="text-sm text-onco-muted">{view?.adminName} · {view?.adminEmail} · {view?.cityState}</p></Modal></Card>;
+  return <Card><Tabs value={tab} onChange={setTab} items={["Pending review", "Approved", "Rejected"].map((value) => ({ label: value, value }))} /><div className="mt-4"><SiteRequestQueue requests={siteRequests.filter((request) => request.status === tab)} onApprove={setApprove} onReject={setReject} onView={setView} /></div><ApproveRequestModal request={approve} onClose={() => setApprove(null)} /><RejectRequestModal request={reject} onClose={() => setReject(null)} /><Modal open={Boolean(view)} title={view?.siteName || "Request"} onClose={() => setView(null)}><p className="text-sm text-onco-muted">{view?.adminName} - {view?.adminEmail} - {view?.cityState}</p></Modal></Card>;
 }
 
 function ApproveRequestModal({ request, onClose }: { request: SiteRequest | null; onClose: () => void }) {
@@ -495,7 +495,7 @@ function ProviderSites() {
 function ProviderSiteDetail({ siteId }: { siteId: string }) {
   const state = useDemoStore();
   const site = state.platformSites.find((item) => item.id === siteId) || state.platformSites[0];
-  return <div className="space-y-5"><Card tone="sage"><h2 className="onco-display text-3xl font-extrabold">{site.name}</h2><p className="mt-2 text-[#C7D8CC]">{site.admin} · {site.status} · Created {site.createdDate}</p></Card><div className="grid gap-4 md:grid-cols-4"><MetricTrendCard label="Members" value={String(site.doctors + 2)} trend="demo count" /><MetricTrendCard label="Patients" value={String(site.patients)} trend="site total" /><MetricTrendCard label="Alerts" value={String(state.alerts.length)} trend="open" /><MetricTrendCard label="Usage" value="420" trend="AI messages" /></div><Card><h2 className="onco-display mb-4 text-xl font-extrabold">Recent audit events</h2><AuditTable events={state.auditEvents.filter((event) => event.site === site.name || site.id === "gvoc")} /></Card><div className="flex flex-wrap gap-2"><Button onClick={() => demoStore.toast("Edit site opened")}>Edit site</Button><Button variant="outline" onClick={() => demoStore.updatePlatformSite(site.id, { status: "Suspended" })}>Suspend site</Button><Button variant="outline" onClick={() => demoStore.toast("Members panel opened")}>View members</Button></div></div>;
+  return <div className="space-y-5"><Card tone="sage"><h2 className="onco-display text-3xl font-extrabold">{site.name}</h2><p className="mt-2 text-[#C7D8CC]">{site.admin} - {site.status} - Created {site.createdDate}</p></Card><div className="grid gap-4 md:grid-cols-4"><MetricTrendCard label="Members" value={String(site.doctors + 2)} trend="demo count" /><MetricTrendCard label="Patients" value={String(site.patients)} trend="site total" /><MetricTrendCard label="Alerts" value={String(state.alerts.length)} trend="open" /><MetricTrendCard label="Usage" value="420" trend="AI messages" /></div><Card><h2 className="onco-display mb-4 text-xl font-extrabold">Recent audit events</h2><AuditTable events={state.auditEvents.filter((event) => event.site === site.name || site.id === "gvoc")} /></Card><div className="flex flex-wrap gap-2"><Button onClick={() => demoStore.toast("Edit site opened")}>Edit site</Button><Button variant="outline" onClick={() => demoStore.updatePlatformSite(site.id, { status: "Suspended" })}>Suspend site</Button><Button variant="outline" onClick={() => demoStore.toast("Members panel opened")}>View members</Button></div></div>;
 }
 
 function SiteTable({ sites }: { sites: PlatformSite[] }) {
@@ -670,3 +670,4 @@ function BillingOperations({ scope }: { scope: "site" | "platform" }) {
 function SummaryLine({ label, value }: { label: string; value: string }) {
   return <div><p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-muted-light">{label}</p><p className="mt-1 text-sm text-onco-muted">{value}</p></div>;
 }
+

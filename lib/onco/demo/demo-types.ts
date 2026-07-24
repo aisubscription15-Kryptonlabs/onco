@@ -145,6 +145,7 @@ export type OnboardingAnswers = {
   previousActivity: string;
   currentCapacity: string;
   weeklyWalkingMinutes: string;
+  walkingPace: "Slow/easy" | "Normal" | "Brisk/moderate";
   weeklyOtherActivityMinutes: string;
   baselineIntensity: "Mostly light" | "Some moderate" | "Hard exercise sometimes";
   averageDailySteps: string;

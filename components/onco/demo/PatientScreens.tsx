@@ -16,6 +16,7 @@ import { Select } from "@/components/onco/ui/Select";
 import { Stepper } from "@/components/onco/ui/Stepper";
 import { Tabs } from "@/components/onco/ui/Tabs";
 import { demoStore, useDemoStore } from "@/lib/onco/demo/demo-store";
+import { estimateBaselineMetHours, formatMetHours, formatMetHoursEarned, formatMetHoursPerActiveDay, formatMetHoursPerWeek } from "@/lib/onco/demo/met";
 import type { ActivityLog, CancerType, ConnectedDevice, OnboardingAnswers, PatientPlan, TrackingType, TreatmentStatus } from "@/lib/onco/demo/demo-types";
 import { cn } from "@/lib/utils";
 import { AiAgentIcon, ArrowUpIcon, AwardIcon, CalendarIcon, CheckIcon, ClipboardIcon, ClockIcon, FlameIcon, HeartIcon, MessageIcon, MicIcon, TargetIcon, WalkIcon } from "../ui/icons";
@@ -45,6 +46,7 @@ const environmentOptions = [
   { key: "Indoor movement space", label: "Space to move indoors at home", icon: "stairs" },
 ] as const;
 const trackingOptions: TrackingType[] = ["Apple Health", "Google Fit", "Garmin", "Fitbit", "Manual"];
+const walkingPaceOptions = ["Slow/easy", "Normal", "Brisk/moderate"] as const;
 const baselineIntensityOptions = ["Mostly light", "Some moderate", "Hard exercise sometimes"] as const;
 const selfStartSteps = ["Start", "Identity", "Treatment", "Baseline", "Safety", "Preferences", "Barriers", "Environment", "Support", "Goal", "Tracking", "Plan"];
 const updateProfileSteps = ["Baseline", "Safety", "Preferences", "Barriers", "Environment", "Support", "Goal + Tracking", "Plan"];
@@ -66,16 +68,6 @@ function trailsForZip(zipCode: string) {
   return matches.length ? matches : trailSuggestions.filter((trail) => trail.zipCodes.includes("default"));
 }
 
-function estimateBaselineMetHours(onboarding: {
-  weeklyWalkingMinutes: string;
-  weeklyOtherActivityMinutes: string;
-  baselineIntensity: string;
-}) {
-  const walkingMinutes = Number(onboarding.weeklyWalkingMinutes) || 0;
-  const otherMinutes = Number(onboarding.weeklyOtherActivityMinutes) || 0;
-  const intensityMet = onboarding.baselineIntensity === "Hard exercise sometimes" ? 4 : onboarding.baselineIntensity === "Some moderate" ? 3.3 : 2.3;
-  return Number((((walkingMinutes * 2.5) + (otherMinutes * intensityMet)) / 60).toFixed(1));
-}
 
 export function OnboardingStateMachine() {
   const router = useRouter();
@@ -92,7 +84,6 @@ export function OnboardingStateMachine() {
   const stepOffset = !isCareCodeFlow && state.onboardingMode !== "none" && step > 0 ? 1 : 0;
   const currentStepNumber = isCareCodeFlow ? step : Math.min(stepNames.length, step + 1 + stepOffset);
   const currentStepName = stepNames[currentStepNumber - 1] || "Start";
-  const showLinkedPatientHeader = state.role === "patient" && state.patientProfile.careCodeLinked && state.patientProfile.inviteCodeType === "patient_invite";
 
   useEffect(() => {
     if (typeof window === "undefined" || launchHandledRef.current) return;
@@ -142,6 +133,9 @@ export function OnboardingStateMachine() {
       setStep(Math.min(total, numericStep));
     }
   }, [isCareCodeFlow, total]);
+  useEffect(() => {
+    if (step > total) setStep(total);
+  }, [step, total]);
   const goBack = () => {
     if (step <= 1) {
       router.push("/");
@@ -152,7 +146,7 @@ export function OnboardingStateMachine() {
 
   function finishOnboarding() {
     demoStore.generatePatientPlan();
-    if (state.patientProfile.onboardingStartMode === "self" || state.patientProfile.selfStarted) {
+    if (state.onboardingMode === "self_start" && !state.careCode && !state.generatedCareCode) {
       demoStore.generateCareCode();
     } else {
       demoStore.completeLinkedPatientOnboarding();
@@ -278,17 +272,24 @@ function Baseline() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-ink">Starting point</p>
           <p className="mt-1 text-xs leading-5 text-onco-muted">A rough usual week is enough. Artie can refine this later.</p>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <NumberField label="Walking min/wk" value={onboarding.weeklyWalkingMinutes} onChange={(weeklyWalkingMinutes) => demoStore.updateOnboarding({ weeklyWalkingMinutes })} />
-          <NumberField label="Other min/wk" value={onboarding.weeklyOtherActivityMinutes} onChange={(weeklyOtherActivityMinutes) => demoStore.updateOnboarding({ weeklyOtherActivityMinutes })} />
+        <div className="grid grid-cols-2 gap-3">
+          <NumberField label="Walking min/week" value={onboarding.weeklyWalkingMinutes} onChange={(weeklyWalkingMinutes) => demoStore.updateOnboarding({ weeklyWalkingMinutes })} />
+          <NumberField label="Other activity min/week" value={onboarding.weeklyOtherActivityMinutes} onChange={(weeklyOtherActivityMinutes) => demoStore.updateOnboarding({ weeklyOtherActivityMinutes })} />
         </div>
-        <Select
-          className="mt-3 block"
-          label="Usual intensity"
-          value={onboarding.baselineIntensity}
-          onChange={(baselineIntensity) => demoStore.updateOnboarding({ baselineIntensity })}
-          options={baselineIntensityOptions.map((value) => ({ label: value, value }))}
-        />
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Select
+            label="Walking pace"
+            value={onboarding.walkingPace || "Normal"}
+            onChange={(walkingPace) => demoStore.updateOnboarding({ walkingPace })}
+            options={walkingPaceOptions.map((value) => ({ label: value, value }))}
+          />
+          <Select
+            label="Other activity intensity"
+            value={onboarding.baselineIntensity}
+            onChange={(baselineIntensity) => demoStore.updateOnboarding({ baselineIntensity })}
+            options={baselineIntensityOptions.map((value) => ({ label: value, value }))}
+          />
+        </div>
         <details className="mt-3 rounded-[14px] bg-[#F8F6EF] p-3">
           <summary className="cursor-pointer text-xs font-semibold text-onco-ink">Add steps or clinic test</summary>
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -307,10 +308,10 @@ function Baseline() {
         </details>
         <div className="mt-3 rounded-[14px] bg-onco-sage-soft p-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.05em] text-onco-sage">Estimated baseline</p>
-            <p className="shrink-0 text-sm font-bold text-onco-ink">{baselineMet || 0} MET-hrs/wk</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.05em] text-onco-sage">Baseline MET-hours/week</p>
+            <p className="shrink-0 text-sm font-bold text-onco-ink">{formatMetHoursPerWeek(baselineMet || 0)}</p>
           </div>
-          <p className="mt-1 text-xs leading-5 text-onco-muted">Used to build safely toward +10 MET-hrs/week above baseline.</p>
+          <p className="mt-2 text-xs leading-5 text-onco-muted">This is your starting activity level. We will use it to build your plan safely.</p>
         </div>
       </div>
     </ScreenTitle>
@@ -569,7 +570,7 @@ function Support({ onAdd }: { onAdd: () => void }) {
       {onboarding.supportPerson ? (
         <Card className="relative min-h-[54px] rounded-[14px] border-onco-sage bg-onco-sage px-4 py-3 pr-12 text-onco-cream">
           <p className="font-semibold">{onboarding.supportPerson.name}</p>
-          <p className="text-sm text-onco-cream/80">{onboarding.supportPerson.relationship} - Invite sent - pending</p>
+          <p className="text-sm text-onco-cream/80">{onboarding.supportPerson.relationship} - {onboarding.supportPerson.supportType} - Invite pending</p>
           <span className="absolute right-3 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full border border-onco-cream/70 text-[10px] text-onco-cream">
             <CheckIcon />
           </span>
@@ -772,7 +773,7 @@ function ReadyToGenerate() {
           <p className="font-semibold">Plan inputs</p>
           <AiBadge light />
         </div>
-        <p className="mt-3 text-xs leading-5 text-[#C7D8CC]">Baseline: {baselineMet || 0} MET-hrs/week from usual movement.</p>
+        <p className="mt-3 text-xs leading-5 text-[#C7D8CC]">Baseline: {formatMetHoursPerWeek(baselineMet || 0)} from usual movement.</p>
         {selectedTrail ? <p className="mt-2 text-xs leading-5 text-[#C7D8CC]">Route idea: {selectedTrail.name}, {selectedTrail.distance}, about {selectedTrail.time}.</p> : null}
         <p className="mt-2 text-sm text-[#C7D8CC]">{onboarding.preferences.join(", ")} - {onboarding.barriers.join(", ")}</p>
       </Card>
@@ -787,9 +788,9 @@ export function SafetyPauseClient() {
     <PatientShell bottomNav={false} requireRole>
       <Card tone="sand" className="mt-10">
         <h1 className="onco-display text-2xl font-extrabold">Pause before starting</h1>
-        <p className="mt-3 text-sm leading-6">You selected: {onboarding.redFlags.join(", ")}. Please acknowledge this safety pause before viewing your plan.</p>
+        <p className="mt-3 text-sm leading-6">You selected: {onboarding.redFlags.join(", ")}. Your movement plan is paused until your care team reviews these symptoms.</p>
       </Card>
-      <Button className="mt-5 w-full" onClick={() => { demoStore.setSafetyPaused(false); router.push("/plan-reveal"); }}>I understand - show my plan</Button>
+      <Button className="mt-5 w-full" onClick={() => { demoStore.setSafetyPaused(true); router.push("/today"); }}>I understand</Button>
       <Link className="onco-button-outline mt-3 w-full" href="/doctor-summary" onClick={() => window.sessionStorage.removeItem("doctorSummaryBackTo")}>Share with my doctor first</Link>
     </PatientShell>
   );
@@ -811,7 +812,17 @@ export function PlanRevealClient() {
       <Card tone="sage" className="mt-8 p-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#A9C5B4]">Week 1 prescription</p>
         <h1 className="onco-display mt-2 text-3xl font-extrabold">{patientPlan.activity} {patientPlan.minutes} minutes</h1>
-        <p className="mt-1 text-sm text-[#C7D8CC]">{patientPlan.daysPerWeek} days/week - {patientPlan.intensity} - {patientPlan.metHours} MET-hrs/wk</p>
+        <p className="mt-1 text-sm text-[#C7D8CC]">{patientPlan.daysPerWeek} days/week - {patientPlan.intensity}</p>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="rounded-2xl bg-onco-cream/12 p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.05em] text-[#A9C5B4]">MET-hours/week</p>
+            <p className="mt-1 text-base font-extrabold">{formatMetHours(patientPlan.metHours)}</p>
+          </div>
+          <div className="rounded-2xl bg-onco-cream/12 p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.05em] text-[#A9C5B4]">MET-hours/active day</p>
+            <p className="mt-1 text-base font-extrabold">{formatMetHours(patientPlan.metHours / Math.max(patientPlan.daysPerWeek, 1))}</p>
+          </div>
+        </div>
       </Card>
       <Card className="mt-4">
         <div className="flex items-center justify-between gap-3">
@@ -826,7 +837,7 @@ export function PlanRevealClient() {
           <AiBadge />
         </div>
         <p className="mt-2 text-sm leading-6 text-onco-muted">
-          Artie estimated {baselineMet || 0} MET-hrs/week from your usual movement. Phase I builds gradually toward +10 MET-hrs/week above baseline.
+          Artie used your starting activity level of {formatMetHoursPerWeek(baselineMet || 0)} to make this plan safe and gradual.
         </p>
       </Card>
       {patientProfile.selfStarted && patientProfile.careTeamCode ? (
@@ -857,6 +868,7 @@ export function TodayClient() {
   const totalMinutes = state.activityLogs.reduce((sum, log) => sum + log.duration, 0);
   const totalMet = state.activityLogs.reduce((sum, log) => sum + log.metHours, 0);
   const goal = state.patientPlan.minutes * state.patientPlan.daysPerWeek;
+
   return (
     <PatientShell activeTab="today" requireRole>
       <header className="flex items-start justify-between"><div><p className="text-[12px] font-semibold text-onco-terracotta">Good morning,</p><h1 className="onco-display text-[28px] font-extrabold">{state.patientProfile.name || "Patient"}</h1></div><ArtieAvatar /></header>
@@ -868,13 +880,14 @@ export function TodayClient() {
       </section>
       <div className="mt-4 grid grid-cols-2 gap-3"><Button variant="outline" onClick={() => setModal("fatigue")}>I'm too tired</Button><Button variant="outline" className="text-onco-terracotta" onClick={() => setModal("symptom")}>I have a symptom</Button></div>
       <Button className="mt-3 w-full" variant="outline" onClick={() => setModal("manual")}>Log something else</Button>
-      <Card className="mt-4"><div className="flex justify-between"><p className="font-semibold">Weekly progress</p><p className="font-bold text-onco-terracotta">{totalMinutes}/{goal} min</p></div><ProgressBar className="mt-3" value={totalMinutes} max={goal} /><p className="mt-2 text-xs text-onco-muted">{totalMet.toFixed(2)} MET-hours earned</p></Card>
+
+      <Card className="mt-4"><div className="flex justify-between"><p className="font-semibold">Weekly progress</p><p className="font-bold text-onco-terracotta">{totalMinutes}/{goal} min</p></div><ProgressBar className="mt-3" value={totalMinutes} max={goal} /><p className="mt-2 text-xs text-onco-muted">{formatMetHoursEarned(totalMet)}</p></Card>
       <Card className="mt-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.06em] text-onco-muted-light">Next Artie session</p>
             <p className="mt-1 font-semibold">Session 3 - Goal setting</p>
-            <p className="mt-1 text-xs leading-5 text-onco-muted">8 minutes to plan around fatigue and protect your weekly rhythm.</p>
+            <p className="mt-1 text-xs leading-5 text-onco-muted">{personalizedTodaySessionText(state.onboarding, state.patientPlan)}</p>
           </div>
           <Link className="onco-button-outline min-h-0 shrink-0 py-2 text-xs" href="/sessions/3">Start</Link>
         </div>
@@ -890,11 +903,72 @@ function ActivityModal({ type, onClose }: { type: "done" | "manual" | "fatigue" 
   const [paceFeel, setPaceFeel] = useState("Easy");
   const [activity, setActivity] = useState("Walking");
   const [symptom, setSymptom] = useState("No");
-  const red = /chest pain|dizzy|dizziness|faint|fever|severe shortness of breath|shortness of breath/i.test(symptom);
   if (!type) return null;
   if (type === "fatigue") return <Modal open title="Artie fatigue guidance" onClose={onClose}><p className="text-sm leading-6 text-onco-muted">Try a 5-minute easy version. If something feels off, pause and report a symptom.</p><Button className="mt-4" onClick={onClose}>Got it</Button></Modal>;
-  if (type === "symptom") return <Modal open title="Report symptom" onClose={onClose}><input className="onco-input" value={symptom} onChange={(event) => setSymptom(event.target.value)} /><>{red ? <Card tone="sand" className="mt-3">Safety pause alert: stop activity and contact your care team.</Card> : null}</><Button className="mt-4" onClick={() => { demoStore.addSymptomReport({ symptom, redFlag: red }); onClose(); }}>Save symptom</Button></Modal>;
+  if (type === "symptom") return <SymptomTriageModal onClose={onClose} />;
   return <Modal open title={type === "done" ? "Log completion" : "Manual activity log"} onClose={onClose}><Select label="Activity" value={activity} onChange={setActivity} options={["Walking", "Gardening", "Cycling", "Stretching"].map((value) => ({ label: value, value }))} /><label className="mt-3 block text-sm font-semibold">Duration<input className="onco-input mt-1" type="number" value={duration} onChange={(event) => setDuration(Number(event.target.value))} /></label><Select className="mt-3 block" label="Pace feel" value={paceFeel} onChange={setPaceFeel} options={["Easy", "A little breathless", "Hard"].map((value) => ({ label: value, value }))} /><Select className="mt-3 block" label="Symptoms?" value={symptom} onChange={setSymptom} options={["No", "Yes"].map((value) => ({ label: value, value }))} /><Button className="mt-4 w-full" onClick={() => { demoStore.addActivityLog({ activity, duration, paceFeel, symptoms: symptom === "Yes" }); onClose(); }}>Save activity</Button></Modal>;
+}
+
+function SymptomTriageModal({ onClose }: { onClose: () => void }) {
+  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+  const [otherSymptom, setOtherSymptom] = useState("");
+  const softerSymptoms = ["Fatigue", "Mild nausea", "Soreness", "Other symptom"];
+  const hasRedFlag = selectedSymptoms.some((symptom) => redFlags.includes(symptom));
+  const hasOther = selectedSymptoms.includes("Other symptom");
+  const canSave = selectedSymptoms.length > 0 && (!hasOther || otherSymptom.trim().length > 0);
+  const reportedSymptoms = selectedSymptoms.map((symptom) => symptom === "Other symptom" ? otherSymptom.trim() : symptom).filter(Boolean);
+
+  function toggleSymptom(symptom: string) {
+    setSelectedSymptoms((current) => current.includes(symptom) ? current.filter((item) => item !== symptom) : [...current, symptom]);
+  }
+
+  function saveSymptom(share = false) {
+    if (!canSave) return;
+    reportedSymptoms.forEach((symptom) => {
+      demoStore.addSymptomReport({ symptom, redFlag: redFlags.includes(symptom) });
+    });
+    if (hasRedFlag) demoStore.setSafetyPaused(true);
+    if (share) demoStore.sharePatientDetailsWithDoctor();
+    demoStore.toast(hasRedFlag ? "Plan paused for safety. Care-team guidance saved." : "Symptom saved. Artie can adjust today.", hasRedFlag ? "warning" : "success");
+    onClose();
+  }
+
+  return (
+    <Modal open title="Symptom check" onClose={onClose}>
+      <p className="text-sm leading-6 text-onco-muted">What are you feeling right now? Choose anything that applies.</p>
+      <div className="mt-4 space-y-2">
+        <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-onco-muted-light">Red-flag symptoms</p>
+        {redFlags.map((symptom) => {
+          const selected = selectedSymptoms.includes(symptom);
+          return <SafetyOption key={symptom} label={symptom} selected={selected} onClick={() => toggleSymptom(symptom)}>{symptom}</SafetyOption>;
+        })}
+      </div>
+      <div className="mt-4 space-y-2">
+        <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-onco-muted-light">Other symptoms</p>
+        {softerSymptoms.map((symptom) => {
+          const selected = selectedSymptoms.includes(symptom);
+          return (
+            <button key={symptom} type="button" className={cn("onco-option-row", selected && "onco-option-row-active")} onClick={() => toggleSymptom(symptom)}>
+              <span className="min-w-0 flex-1 pr-7">{symptom}</span>
+              {selected ? <span className="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full border border-onco-cream/70 text-[10px]"><CheckIcon /></span> : null}
+            </button>
+          );
+        })}
+        {hasOther ? <input className="onco-input" value={otherSymptom} onChange={(event) => setOtherSymptom(event.target.value)} placeholder="Tell us what you feel" /> : null}
+      </div>
+      <Card tone={hasRedFlag ? "sand" : "sage"} className="mt-4">
+        <p className="font-semibold">{hasRedFlag ? "Pause movement for now" : "Log and adjust today"}</p>
+        <p className={cn("mt-2 text-sm leading-6", hasRedFlag ? "text-onco-muted" : "text-onco-cream/85")}>
+          {hasRedFlag ? "Stop activity and contact your care team or urgent care if symptoms feel severe. We will pause the plan and save this for review." : "Artie can suggest a lighter version or rest today. This will be saved for your doctor summary."}
+        </p>
+      </Card>
+      <div className="mt-4 grid gap-2">
+        <Button className="w-full" disabled={!canSave} onClick={() => saveSymptom(false)}>Save symptom</Button>
+        <Button className="w-full" disabled={!canSave} variant="outline" onClick={() => saveSymptom(true)}>Share with care team</Button>
+        <Button className="w-full" variant="outline" onClick={onClose}>Back to Today</Button>
+      </div>
+    </Modal>
+  );
 }
 
 export function PrescriptionClient() {
@@ -908,9 +982,9 @@ export function PrescriptionClient() {
   const hiddenAdaptationCount = Math.max(adaptationChips.length - visibleAdaptations.length, 0);
   const safetyItems = [
     { title: "Stop for chest pain", detail: "Pause activity and contact your care team if chest pain or pressure appears." },
-    { title: "Hydrate", detail: "Keep water nearby and use a gentler version on tired days." },
-    { title: "Use flat steady routes", detail: "Choose smooth, predictable paths and avoid pushing pace." },
-    { title: "Choose bathroom loops", detail: "Use short loops near home or places with easy bathroom access." },
+    { title: "Hydrate", detail: `Keep water nearby during ${patientPlan.activity.toLowerCase()} and use a gentler version on tired days.` },
+    { title: "Use safe steady options", detail: onboarding.barriers.includes("Numb feet / neuropathy") ? "Choose flat, steady surfaces and avoid uneven ground." : "Choose smooth, predictable options and avoid pushing pace." },
+    { title: "Plan your backup", detail: onboarding.barriers.includes("Need bathrooms nearby") ? "Use short loops near home or places with easy bathroom access." : `Keep a shorter ${patientPlan.activity.toLowerCase()} option ready for lower-energy days.` },
   ];
   return (
     <PatientShell activeTab="prescription" requireRole>
@@ -919,14 +993,18 @@ export function PrescriptionClient() {
         <p className="text-xs font-semibold uppercase tracking-[0.06em] text-onco-cream/70">This week</p>
         <h2 className="onco-display mt-2 text-3xl font-extrabold">{patientPlan.activity} {patientPlan.minutes} minutes</h2>
         <p className="mt-2 text-sm text-onco-cream/80">{patientPlan.daysPerWeek} days/week - {patientPlan.intensity}</p>
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
           <div className="rounded-2xl bg-onco-cream/12 p-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-cream/65">Weekly goal</p>
             <p className="mt-1 text-lg font-extrabold">{weeklyMinutes} min</p>
           </div>
           <div className="rounded-2xl bg-onco-cream/12 p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-cream/65">MET dose</p>
-            <p className="mt-1 text-lg font-extrabold">{patientPlan.metHours}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-cream/65">MET-hours/week</p>
+            <p className="mt-1 text-lg font-extrabold">{formatMetHours(patientPlan.metHours)}</p>
+          </div>
+          <div className="rounded-2xl bg-onco-cream/12 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-cream/65">MET-hours/active day</p>
+            <p className="mt-1 text-lg font-extrabold">{formatMetHours(patientPlan.metHours / Math.max(patientPlan.daysPerWeek, 1))}</p>
           </div>
         </div>
       </Card>
@@ -1012,14 +1090,14 @@ export function LegacySessionThreeClient() {
 }
 
 export function SessionsClient() {
-  const { completedSessions, programSessions } = useDemoStore();
+  const { completedSessions, programSessions, onboarding, patientPlan } = useDemoStore();
   const completedCount = completedSessions.filter((sessionNumber) => sessionNumber <= 12).length;
   const completionPercent = Math.round((completedCount / 12) * 100);
   const sessionRows = [
     { number: 1, title: "Getting started", detail: "Monitoring intensity", completed: "Completed May 26" },
     { number: 2, title: "Safety + hydration", detail: "What to wear", completed: "Completed June 6" },
     { number: 3, title: "Goal setting", detail: "8 minutes", description: "Artie reviews your last 2 weeks, helps you set a goal that fits your energy, and updates your prescription." },
-    { number: 4, title: "Tracking your movement", detail: "10 minutes", description: "Connect tracking habits so your minutes, steps, and MET dose stay easy to follow." },
+    { number: 4, title: "Tracking your movement", detail: "10 minutes", description: "Connect tracking habits so your minutes, steps, and MET-hours stay easy to follow." },
     { number: 5, title: "Fitness check-in", detail: "10 minutes", description: "Review how your body is responding and adjust your plan around today's energy." },
     { number: 6, title: "Why movement helps recovery", detail: "10 minutes", description: "Learn how small, safe movement supports stamina, confidence, and daily routines." },
     { number: 7, title: "Overcoming barriers", detail: "10 minutes", description: "Plan around fatigue, bathrooms, weather, motivation, and other real-life blockers." },
@@ -1062,7 +1140,7 @@ export function SessionsClient() {
                 <p className="mt-1 text-xs font-semibold text-onco-cream/80">{currentSession.detail} - Available now</p>
               </div>
             </div>
-            <p className="mt-4 text-sm leading-relaxed text-onco-cream/90">{currentSession.description}</p>
+            <p className="mt-4 text-sm leading-relaxed text-onco-cream/90">{personalizedSessionFocus(currentSession.number, onboarding, patientPlan)}</p>
             <Link className="mt-4 flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl bg-onco-cream px-4 text-sm font-extrabold text-onco-ink" href={`/sessions/${currentSession.number}`}>
               <span className="grid h-5 w-5 place-items-center rounded-full border border-onco-sage/30 text-onco-sage" aria-hidden="true">
                 <span className="ml-0.5 h-0 w-0 border-y-[5px] border-l-[7px] border-y-transparent border-l-current" />
@@ -1117,36 +1195,10 @@ export function SessionFlowClient({ sessionId }: { sessionId: number }) {
   const session = state.programSessions.find((item) => item.number === sessionId) || state.programSessions[2];
   const progress = state.sessionProgress[String(sessionId)] || 0;
   const firstName = state.patientProfile.name?.trim().split(/\s+/)[0] || "there";
-  const openingMessage = `Nice to see you, ${firstName}. Last week you completed 2 of your 3 walks - that's real progress. What got in the way on Thursday?`;
-  const profileSuggestionChips = useMemo(() => {
-    const suggestions: string[] = [];
-    const selected = [...state.onboarding.barriers, ...state.onboarding.preferences, ...state.onboarding.preferenceChips];
-    const has = (...values: string[]) => selected.some((item) => values.some((value) => item.toLowerCase().includes(value.toLowerCase())));
-    if (has("Fatigue")) suggestions.push("Fatigue got in the way");
-    if (has("Bathroom")) suggestions.push("Bathroom access");
-    if (has("Fear of overdoing", "overdo")) suggestions.push("I was worried I would overdo it");
-    if (has("Neuropathy", "Numb feet")) suggestions.push("My feet felt numb");
-    if (has("Nausea")) suggestions.push("Nausea made it harder");
-    if (has("No time")) suggestions.push("I did not have enough time");
-    if (has("Weather")) suggestions.push("Weather got in the way");
-    if (has("No safe place")) suggestions.push("I did not feel safe walking");
-    if (has("Gardening")) suggestions.push("I want gardening to count");
-    if (has("Walking")) suggestions.push("Walking felt doable");
-    return Array.from(new Set(suggestions)).slice(0, 4).length
-      ? Array.from(new Set(suggestions)).slice(0, 4)
-      : ["Fatigue got in the way", "Bathroom access", "I was worried I would overdo it"];
-  }, [state.onboarding.barriers, state.onboarding.preferenceChips, state.onboarding.preferences]);
+  const openingMessage = personalizedSessionOpening(sessionId, firstName, state.onboarding, state.patientPlan);
+  const profileSuggestionChips = useMemo(() => personalizedSessionChips(sessionId, state.onboarding, state.patientPlan), [sessionId, state.onboarding, state.patientPlan]);
   function artieSessionReply(answer: string) {
-    if (/bathroom/i.test(answer)) return "That makes sense. Bathroom access is planning information, not an excuse. Want to build shorter loops with restroom stops?";
-    if (/overdo|worried|afraid/i.test(answer)) return "That worry is valid. We can keep your next goal below your limit and use a stop-before-tired rule.";
-    if (/neuropathy|numb|feet/i.test(answer)) return "Thanks for flagging that. We can favor flatter routes, shorter loops, and shoes or surfaces that feel steadier.";
-    if (/nausea/i.test(answer)) return "Nausea days need a softer plan. We can use very short movement windows and avoid pushing on rough treatment days.";
-    if (/weather/i.test(answer)) return "Weather is a real planning detail. I can suggest indoor backups or shaded, cooler route windows.";
-    if (/safe/i.test(answer)) return "Safety comes first. We can use indoor movement, supported routes, or care-team-approved alternatives.";
-    if (/garden/i.test(answer)) return "Gardening can count when it is paced safely. We can split it into short, gentle blocks.";
-    if (/walking/i.test(answer)) return "Good. We'll keep walking as the anchor and adjust the dose around your current energy.";
-    if (/fatigue|wiped|tired|infusion/i.test(answer)) return "That's not a failure - that's information. Infusion days are predictably hard. Want to plan your walks around your treatment schedule?";
-    return "Thank you for telling me. I'll use that to shape a safer, more realistic goal for this week.";
+    return sessionArtieReply(sessionId, answer, firstName, state.onboarding, state.patientPlan);
   }
   function sendAnswer(answer: string) {
     const cleanAnswer = answer.trim();
@@ -1274,6 +1326,11 @@ export function ProgressClient() {
   const adherence = minutePercent;
   const completion = Math.min(100, Math.round((minutePercent + metPercent + adherence) / 3));
   const milestonesReached = [activeDays >= 3, totalMinutes >= 50, state.completedSessions.length >= 3].filter(Boolean).length;
+  const progressPreference = primaryPreference(state.onboarding, state.patientPlan).toLowerCase();
+  const progressBarrier = primaryBarrier(state.onboarding).toLowerCase();
+  const progressMessage = progressBarrier && progressBarrier !== "today's energy"
+    ? `Your ${progressPreference} goal is being tracked while Artie plans around ${progressBarrier}.`
+    : `Your ${progressPreference} goal is being tracked from the plan you built.`;
   return (
     <PatientShell activeTab="progress" requireRole>
       <h1 className="onco-display text-[28px] font-extrabold leading-none">Goals & milestones</h1>
@@ -1288,8 +1345,8 @@ export function ProgressClient() {
         />
         <GoalKpiCard
           icon={<FlameIcon />}
-          label="MET dose"
-          value={`${totalMet.toFixed(2)}/${metGoal.toFixed(2)}`}
+          label="MET-hours earned"
+          value={`${formatMetHours(totalMet)}/${formatMetHours(metGoal)}`}
           detail={`${metPercent}% of goal`}
         />
         <GoalKpiCard
@@ -1318,7 +1375,7 @@ export function ProgressClient() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="onco-display text-[19px] font-extrabold leading-tight">You are building toward your weekly target.</p>
-            <p className="mt-1 text-xs leading-5 text-onco-muted">Small, safe increases count.</p>
+            <p className="mt-1 text-xs leading-5 text-onco-muted">{progressMessage}</p>
           </div>
         </div>
       </Card>
@@ -1581,7 +1638,7 @@ export function LegacyGuidedWalkClient() {
   }
   return (
     <PatientShell bottomNav={false} inverted requireRole>
-      <div className="flex min-h-ios-compact flex-col justify-between text-center"><Link className="text-left text-sm text-[#C7D8CC]" href="/today">Close</Link><section><Badge tone="cream">Guided walk - Main walk</Badge><h1 className="onco-display mt-5 text-[64px] font-extrabold">{formatTime(seconds)}</h1><p className="text-[#A9C5B4]">of {patientPlan.minutes} minutes - {earned} MET dose</p><ProgressBar className="mt-5 bg-onco-cream/25" indicatorClassName="bg-onco-sand" value={seconds / 60} max={patientPlan.minutes} /></section><section><Card className="bg-onco-cream/10 text-left text-onco-cream border-none"><p>Talk test: can you talk comfortably?</p><div className="mt-3 grid grid-cols-3 gap-2">{["Easy", "A little breathless", "Struggling"].map((item) => <Button key={item} variant={pace === item ? "cream" : "outline"} className={pace !== item ? "border-onco-cream/20 text-onco-cream" : ""} onClick={() => setPace(item)}>{item}</Button>)}</div></Card><div className="mt-4 flex gap-3"><Button className="flex-1" variant="cream" onClick={() => setRunning((value) => !value)}>{running ? "Pause" : seconds ? "Resume" : "Start"}</Button><Button className="flex-1 bg-[#F0D9CE] text-[#7A3B1E]" onClick={() => setStopOpen(true)}>I need to stop</Button></div><Button className="mt-3 w-full" variant="outline" onClick={complete}>Complete walk</Button></section></div>
+      <div className="flex min-h-ios-compact flex-col justify-between text-center"><Link className="text-left text-sm text-[#C7D8CC]" href="/today">Close</Link><section><Badge tone="cream">Guided walk - Main walk</Badge><h1 className="onco-display mt-5 text-[64px] font-extrabold">{formatTime(seconds)}</h1><p className="text-[#A9C5B4]">of {patientPlan.minutes} minutes - {formatMetHoursEarned(earned)}</p><ProgressBar className="mt-5 bg-onco-cream/25" indicatorClassName="bg-onco-sand" value={seconds / 60} max={patientPlan.minutes} /></section><section><Card className="bg-onco-cream/10 text-left text-onco-cream border-none"><p>Talk test: can you talk comfortably?</p><div className="mt-3 grid grid-cols-3 gap-2">{["Easy", "A little breathless", "Struggling"].map((item) => <Button key={item} variant={pace === item ? "cream" : "outline"} className={pace !== item ? "border-onco-cream/20 text-onco-cream" : ""} onClick={() => setPace(item)}>{item}</Button>)}</div></Card><div className="mt-4 flex gap-3"><Button className="flex-1" variant="cream" onClick={() => setRunning((value) => !value)}>{running ? "Pause" : seconds ? "Resume" : "Start"}</Button><Button className="flex-1 bg-[#F0D9CE] text-[#7A3B1E]" onClick={() => setStopOpen(true)}>I need to stop</Button></div><Button className="mt-3 w-full" variant="outline" onClick={complete}>Complete walk</Button></section></div>
       <Modal open={stopOpen} title="Stop safely" onClose={() => setStopOpen(false)}><p className="text-sm text-onco-muted">Stop now. Sit if needed. If symptoms include chest pain, dizziness, or unusual shortness of breath, contact your care team.</p><Button className="mt-4" onClick={() => { demoStore.setSafetyPaused(true); setStopOpen(false); router.push("/today"); }}>Stop and save safety note</Button></Modal>
     </PatientShell>
   );
@@ -1618,7 +1675,7 @@ export function GuidedWalkClient() {
         <section>
           <Badge tone="cream">Guided walk - {stage}</Badge>
           <h1 className="onco-display mt-2 text-[48px] font-extrabold leading-none">{formatTime(seconds)}</h1>
-          <p className="mt-2 text-sm text-[#C7D8CC]">of {patientPlan.minutes} minutes - {earned} MET dose - {steps} steps</p>
+          <p className="mt-2 text-sm text-[#C7D8CC]">of {patientPlan.minutes} minutes - {formatMetHoursEarned(earned)} - {steps} steps</p>
           <div className="mt-3 grid grid-cols-4 gap-2" aria-hidden="true">
             {[0, 1, 2, 3].map((index) => (
               <span key={index} className="h-1.5 overflow-hidden rounded-full bg-onco-cream/25">
@@ -1667,7 +1724,7 @@ export function GuidedWalkClient() {
               <p className="onco-display mt-1 text-xl font-extrabold">{pace === "Yes easily" ? "Easy" : pace === "A little breathless" ? "Steady" : "Hard"}</p>
             </div>
             <div className="rounded-[14px] bg-onco-cream/15 p-2.5">
-              <p className="text-[10px] font-bold uppercase text-[#C7D8CC]">Dose</p>
+              <p className="text-[10px] font-bold uppercase text-[#C7D8CC]">MET-hours</p>
               <p className="onco-display mt-1 text-xl font-extrabold">{earned}</p>
             </div>
           </div>
@@ -1688,7 +1745,7 @@ export function GuidedWalkClient() {
 export function GuidedWalkSuccessClient() {
   const { activityLogs } = useDemoStore();
   const latest = activityLogs[0];
-  return <PatientShell bottomNav={false} requireRole><Card tone="sage" className="mt-10 text-center"><CheckIcon className="mx-auto text-4xl" /><h1 className="onco-display mt-3 text-3xl font-extrabold">Walk complete</h1><p className="mt-2 text-sm text-[#C7D8CC]">{latest?.duration || 1} minutes logged - {latest?.metHours.toFixed(2) || "0.04"} MET-hours earned</p></Card><Link className="onco-button-primary mt-5 w-full" href="/progress">View progress</Link></PatientShell>;
+  return <PatientShell bottomNav={false} requireRole><Card tone="sage" className="mt-10 text-center"><CheckIcon className="mx-auto text-4xl" /><h1 className="onco-display mt-3 text-3xl font-extrabold">Walk complete</h1><p className="mt-2 text-sm text-[#C7D8CC]">{latest?.duration || 1} minutes logged - {formatMetHoursEarned(latest?.metHours || 0.04)}</p></Card><Link className="onco-button-primary mt-5 w-full" href="/progress">View progress</Link></PatientShell>;
 }
 
 export function DoctorSummaryClient() {
@@ -1698,10 +1755,10 @@ export function DoctorSummaryClient() {
   const minutes = state.activityLogs.reduce((sum, log) => sum + log.duration, 0);
   const met = state.activityLogs.reduce((sum, log) => sum + log.metHours, 0);
   const baselineMet = estimateBaselineMetHours(state.onboarding);
-  const baselineText = `${state.onboarding.previousActivity}. Current capacity: ${state.onboarding.currentCapacity} Baseline estimate: ${baselineMet || 0} MET-hrs/week, ${state.onboarding.weeklyWalkingMinutes || 0} walking min/wk, ${state.onboarding.weeklyOtherActivityMinutes || 0} other min/wk, ${state.onboarding.averageDailySteps || "not entered"} avg steps/day${state.onboarding.sixMinuteWalk ? `, 6-min walk ${state.onboarding.sixMinuteWalk} ft` : ""}.`;
+  const baselineText = `${state.onboarding.previousActivity}. Current capacity: ${state.onboarding.currentCapacity} Baseline estimate: ${formatMetHoursPerWeek(baselineMet || 0)}, ${state.onboarding.weeklyWalkingMinutes || 0} walking minutes/week (${state.onboarding.walkingPace || "Normal"}), ${state.onboarding.weeklyOtherActivityMinutes || 0} other activity minutes/week (${state.onboarding.baselineIntensity}), ${state.onboarding.averageDailySteps || "not entered"} avg steps/day${state.onboarding.sixMinuteWalk ? `, 6-min walk ${state.onboarding.sixMinuteWalk} ft` : ""}.`;
   const symptoms = state.symptomReports.length ? state.symptomReports.map((item) => `${item.symptom}${item.redFlag ? " (red flag)" : ""}`).join(", ") : "No symptoms reported.";
   const safetyFlags = state.onboarding.redFlags.length ? state.onboarding.redFlags.join(", ") : "No onboarding red flags selected.";
-  const summary = `OncoMotionRx summary for ${state.patientProfile.name || "Patient"}. Context: ${state.onboarding.cancerType}, ${state.onboarding.treatmentStatus}. Baseline: ${baselineText} Prescription: ${state.patientPlan.activity} ${state.patientPlan.minutes} min, ${state.patientPlan.daysPerWeek} days/week. Adherence: ${minutes} minutes, ${met.toFixed(2)} MET-hours. Symptoms: ${symptoms}. Safety flags: ${safetyFlags}. Barriers: ${state.onboarding.barriers.join(", ")}. Questions: activity restrictions, neuropathy fall risk, and stop symptoms.`;
+  const summary = `OncoMotionRx summary for ${state.patientProfile.name || "Patient"}. Context: ${state.onboarding.cancerType}, ${state.onboarding.treatmentStatus}. Baseline: ${baselineText} Prescription: ${state.patientPlan.activity} ${state.patientPlan.minutes} min, ${state.patientPlan.daysPerWeek} days/week, ${formatMetHoursPerWeek(state.patientPlan.metHours)}, ${formatMetHoursPerActiveDay(state.patientPlan.metHours, state.patientPlan.daysPerWeek)}. Adherence: ${minutes} minutes, ${formatMetHours(met)} MET-hours. Symptoms: ${symptoms}. Safety flags: ${safetyFlags}. Barriers: ${state.onboarding.barriers.join(", ")}. Questions: activity restrictions, neuropathy fall risk, and stop symptoms.`;
   const [storedBackTo, setStoredBackTo] = useState("");
   useEffect(() => {
     if (searchParams.get("from") === "prescription") {
@@ -1742,8 +1799,8 @@ export function DoctorSummaryClient() {
           items={[
             `${state.onboarding.previousActivity || "Baseline not selected"} before cancer.`,
             state.onboarding.currentCapacity || "Current capacity not entered.",
-            `${baselineMet || 0} MET-hrs/week baseline estimate.`,
-            `${state.onboarding.weeklyWalkingMinutes || 0} walking min/wk, ${state.onboarding.weeklyOtherActivityMinutes || 0} other min/wk.`,
+            `${formatMetHoursPerWeek(baselineMet || 0)} baseline estimate.`,
+            `${state.onboarding.weeklyWalkingMinutes || 0} walking minutes/week (${state.onboarding.walkingPace || "Normal"}), ${state.onboarding.weeklyOtherActivityMinutes || 0} other activity minutes/week (${state.onboarding.baselineIntensity}).`,
           ]}
         />
       </Card>
@@ -1752,8 +1809,8 @@ export function DoctorSummaryClient() {
           title="Prescription"
           items={[
             `${state.patientPlan.activity} - ${state.patientPlan.minutes} min, ${state.patientPlan.daysPerWeek} days/week.`,
-            `${state.patientPlan.intensity} - ${state.patientPlan.metHours} MET-hrs/wk.`,
-            `${minutes} minutes logged - ${met.toFixed(2)} MET-hours earned.`,
+            `${state.patientPlan.intensity} - ${formatMetHoursPerWeek(state.patientPlan.metHours)} - ${formatMetHoursPerActiveDay(state.patientPlan.metHours, state.patientPlan.daysPerWeek)}.`,
+            `${minutes} minutes logged - ${formatMetHoursEarned(met)}.`,
           ]}
         />
       </Card>
@@ -1766,7 +1823,7 @@ export function DoctorSummaryClient() {
       <div className="mt-5 grid gap-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <Button onClick={() => { void navigator.clipboard?.writeText(summary); demoStore.toast("Copied for MyChart"); }}>Copy for MyChart</Button>
         <Button variant="outline" onClick={() => demoStore.toast("PDF export prepared.", "info")}>Download PDF</Button>
-        <Link className="onco-button-outline w-full" href={backHref}>{backText}</Link>
+        <Link className="onco-button-outline w-full" href="/today">Continue to Today</Link>
       </div>
       <Modal open={share} title="Share summary" onClose={() => setShare(false)}><p className="text-sm text-onco-muted">Send this summary to your care team for plan review.</p><Button className="mt-4" onClick={() => { demoStore.sharePatientDetailsWithDoctor(); setShare(false); }}>Send to doctor for review</Button></Modal>
     </PatientShell>
@@ -2135,7 +2192,7 @@ export function ProfileClient() {
       </Card>
       <Card className="mt-4">
         <p className="font-semibold">Support person</p>
-        <p className="mt-2 text-sm text-onco-muted">{support ? `${support.name} - ${support.relationship} - Invite sent - pending` : "No support person added yet."}</p>
+        <p className="mt-2 text-sm text-onco-muted">{support ? `${support.name} - ${support.relationship} - ${support.supportType} - Invite pending` : "No support person added yet."}</p>
       </Card>
       <Link className="onco-button-outline mt-4 w-full" href="/privacy-sharing">Privacy & sharing</Link>
     </PatientShell>
@@ -2214,7 +2271,7 @@ function DeviceConnectivityContent({ fromOnboarding, requestedSource, state }: {
       </Card>
       <Card className="mt-4 space-y-3">
         <ToggleRow label="Auto-sync activity" checked={autoSync} onChange={setAutoSync} />
-        <ToggleRow label="Share MET dose with care team" checked={shareDose} onChange={setShareDose} />
+        <ToggleRow label="Share MET-hours with care team" checked={shareDose} onChange={setShareDose} />
       </Card>
       <div className="mt-5 space-y-3">
         {state.connectedDevices.map((device) => (
@@ -2250,13 +2307,13 @@ function DeviceConnectivityContent({ fromOnboarding, requestedSource, state }: {
               <p className="font-semibold">Permissions requested</p>
               <div className="mt-3 space-y-2 text-sm text-onco-muted">
                 <p>Read steps, walking minutes, and active energy.</p>
-                <p>Estimate MET dose for your weekly prescription.</p>
+                <p>Estimate MET-hours for your weekly prescription.</p>
                 <p>Show sync status to you and your care team if sharing is enabled.</p>
               </div>
             </Card>
             <Card className="mt-3">
               <p className="font-semibold">Sample sync result</p>
-              <p className="mt-2 text-sm leading-6 text-onco-muted">8 minutes easy walking - 0.33 MET-hours - no symptoms reported.</p>
+              <p className="mt-2 text-sm leading-6 text-onco-muted">8 minutes easy walking - 0.33 MET-hours earned - no symptoms reported.</p>
             </Card>
             <div className="mt-4 grid gap-2">
               <Button className="w-full" onClick={() => connectAndClose(selectedDevice)}>Allow and connect</Button>
@@ -2331,11 +2388,65 @@ function ToggleRow({ label, checked, onChange }: { label: string; checked: boole
 }
 
 function SupportModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [name, setName] = useState("Maya Rivera");
-  const [relationship, setRelationship] = useState("Sister");
-  const [contact, setContact] = useState("maya@example.com");
-  const [supportType, setSupportType] = useState("Reminders");
-  return <Modal open={open} title="Add support person" onClose={onClose}><input className="onco-input" value={name} onChange={(event) => setName(event.target.value)} /><input className="onco-input mt-3" value={relationship} onChange={(event) => setRelationship(event.target.value)} /><input className="onco-input mt-3" value={contact} onChange={(event) => setContact(event.target.value)} /><Select className="mt-3 block" label="Support type" value={supportType} onChange={setSupportType} options={["Reminders", "Walking buddy", "Care updates"].map((value) => ({ label: value, value }))} /><Button className="mt-4 w-full" onClick={() => { if (!name || !contact) { demoStore.toast("Name and contact required", "warning"); return; } demoStore.setSupportPerson({ name, relationship, contact, supportType, invitePending: true }); demoStore.toast("Invite sent - pending"); onClose(); }}>Send invite</Button></Modal>;
+  const { onboarding } = useDemoStore();
+  const existing = onboarding.supportPerson;
+  const [name, setName] = useState("");
+  const [relationship, setRelationship] = useState("");
+  const [contact, setContact] = useState("");
+  const [supportType, setSupportType] = useState("Reminder buddy");
+
+  useEffect(() => {
+    if (!open) return;
+    setName(existing?.name || "");
+    setRelationship(existing?.relationship || "");
+    setContact(existing?.contact || "");
+    setSupportType(existing?.supportType || "Reminder buddy");
+  }, [existing, open]);
+
+  return (
+    <Modal open={open} title="Add support person" onClose={onClose}>
+      <p className="text-sm leading-6 text-onco-muted">Add the person this patient chooses. Details are unique for each patient.</p>
+      <label className="mt-4 block">
+        <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-muted-light">Name</span>
+        <input className="onco-input" value={name} onChange={(event) => setName(event.target.value)} placeholder="Support person name" />
+      </label>
+      <label className="mt-3 block">
+        <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-muted-light">Relationship</span>
+        <input className="onco-input" value={relationship} onChange={(event) => setRelationship(event.target.value)} placeholder="Sister, spouse, friend, caregiver" />
+      </label>
+      <label className="mt-3 block">
+        <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.05em] text-onco-muted-light">Email or phone</span>
+        <input className="onco-input" value={contact} onChange={(event) => setContact(event.target.value)} placeholder="Email or phone number" />
+      </label>
+      <Select
+        className="mt-3 block"
+        label="Support type"
+        value={supportType}
+        onChange={setSupportType}
+        options={["Reminder buddy", "Walking buddy", "Care update contact", "Emergency contact", "Motivation support"].map((value) => ({ label: value, value }))}
+      />
+      <Button
+        className="mt-4 w-full"
+        onClick={() => {
+          if (!name.trim() || !contact.trim()) {
+            demoStore.toast("Name and contact required", "warning");
+            return;
+          }
+          demoStore.setSupportPerson({
+            name: name.trim(),
+            relationship: relationship.trim() || "Support person",
+            contact: contact.trim(),
+            supportType,
+            invitePending: true,
+          });
+          demoStore.toast("Invite sent - pending");
+          onClose();
+        }}
+      >
+        Send invite
+      </Button>
+    </Modal>
+  );
 }
 
 function ScreenTitle({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
@@ -2828,7 +2939,7 @@ function ChatBubble({ sender, text }: { sender: "user" | "artie"; text: string }
 }
 
 function ActivityTable({ logs }: { logs: ActivityLog[] }) {
-  return <DataTable rows={logs} getKey={(log) => log.id} columns={[{ header: "Activity", cell: (log) => log.activity }, { header: "Duration", cell: (log) => `${log.duration} min` }, { header: "MET", cell: (log) => log.metHours.toFixed(2) }]} />;
+  return <DataTable rows={logs} getKey={(log) => log.id} columns={[{ header: "Activity", cell: (log) => log.activity }, { header: "Duration", cell: (log) => `${log.duration} min` }, { header: "MET-hours", cell: (log) => formatMetHours(log.metHours) }]} />;
 }
 
 function Summary({ label, text }: { label: string; text: string }) {
@@ -2886,43 +2997,160 @@ function formatSelectionList(items: string[]) {
 }
 
 function preferenceSupportMessage(selected: string[], feelChips: string[], currentCapacity: string) {
-  if (selected.length === 0) return "";
-  const movementText = formatSelectionList(selected.slice(0, 3));
-  const feelText = feelChips.length ? ` It should feel ${formatSelectionList(feelChips.map((item) => item.toLowerCase()))}.` : "";
-  if (selected.includes("Gardening") || /garden/i.test(currentCapacity)) {
-    return `You mentioned ${movementText.toLowerCase()}. Gardening absolutely counts - we can build it into your plan.${feelText}`;
-  }
-  return `${movementText} can be part of your plan. Artie will start small and adjust around your energy.${feelText}`;
+  if (selected.length === 0 && feelChips.length === 0 && !currentCapacity.trim()) return "";
+  return "Artie will use this to shape your plan.";
 }
 
 function barrierSupportMessage(selected: string[]) {
   if (selected.length === 0) return "";
-  const selectedText = formatSelectionList(selected.slice(0, 3)).toLowerCase();
-  const adjustments = [];
-  if (selected.includes("Fatigue")) adjustments.push("shorter sessions");
-  if (selected.includes("Numb feet / neuropathy")) adjustments.push("flat, steady routes");
-  if (selected.includes("Need bathrooms nearby")) adjustments.push("bathroom-friendly loops");
-  if (selected.includes("Fear of overdoing it")) adjustments.push("starts below your limit");
-  if (selected.includes("No safe place to walk") || selected.includes("Weather")) adjustments.push("indoor backups");
-  if (selected.includes("No time")) adjustments.push("smaller sessions");
-  if (selected.includes("Low motivation")) adjustments.push("easy first steps");
-  if (selected.includes("Feeling self-conscious")) adjustments.push("private options");
-  if (selected.includes("Nausea")) adjustments.push("easy-to-pause movement");
-  return `${selectedText} are planning details. Artie will use ${formatSelectionList(adjustments.slice(0, 3)) || "realistic adjustments"} so the plan feels safe and doable.`;
+  return "Artie will plan around these.";
 }
 
 function environmentSupportMessage(environment: Record<string, boolean>) {
-  const selected = environmentOptions.filter((option) => environment[option.key]).map((option) => option.label);
-  if (selected.length === 0) return "";
-  const routeSupports = [];
-  if (environment["Sidewalks nearby"]) routeSupports.push("nearby sidewalks or paths");
-  if (environment["Safe walking area"]) routeSupports.push("safer outdoor routes");
-  if (environment["Bathrooms on route"]) routeSupports.push("bathroom-friendly loops");
-  if (environment["Gym/community center access"]) routeSupports.push("gym or community center options");
-  if (environment["Indoor movement space"]) routeSupports.push("indoor backups");
-  return `${formatSelectionList(selected.slice(0, 3))} will shape the route ideas. Artie can use ${formatSelectionList(routeSupports.slice(0, 3))} when building the plan.`;
+  const hasSelection = environmentOptions.some((option) => environment[option.key]);
+  if (!hasSelection) return "";
+  return "Artie will use this for route ideas and backups.";
 }
 
+function primaryBarrier(onboarding: OnboardingAnswers) {
+  return onboarding.barriers[0] || onboarding.redFlags[0] || "today's energy";
+}
+
+function primaryPreference(onboarding: OnboardingAnswers, plan: PatientPlan) {
+  return onboarding.preferences[0] || plan.activity;
+}
+
+function sessionTopic(sessionId: number) {
+  const topics: Record<number, string> = {
+    3: "goal setting",
+    4: "tracking your movement",
+    5: "fitness check-in",
+    6: "why movement helps recovery",
+    7: "overcoming barriers",
+    8: "support and routines",
+    9: "enjoyment and confidence",
+    10: "progress reflection",
+    11: "doctor visit prep",
+    12: "next phase plan",
+  };
+  return topics[sessionId] || "your movement plan";
+}
+
+function personalizedSessionFocus(sessionId: number, onboarding: OnboardingAnswers, plan: PatientPlan) {
+  const barrier = primaryBarrier(onboarding).toLowerCase();
+  const preference = primaryPreference(onboarding, plan).toLowerCase();
+  if (sessionId === 4) return `Connect ${onboarding.trackingType || "manual tracking"} so ${preference} minutes and MET-hours are easier to follow.`;
+  if (sessionId === 5) return `Check how your body is responding to ${plan.minutes}-minute ${preference} sessions.`;
+  if (sessionId === 7 && barrier !== "today's energy") return `Build a practical plan around ${barrier} without treating it like a failure.`;
+  if (sessionId === 8) return onboarding.supportPerson ? `Use ${onboarding.supportPerson.name}'s support to make ${preference} easier to keep.` : `Decide whether support, reminders, or solo routines will help ${preference} fit your week.`;
+  if (sessionId === 11) return `Prepare a simple summary for ${onboarding.cancerType.toLowerCase()} care and your current ${preference} plan.`;
+  if (barrier && barrier !== "today's energy") return `Plan around ${barrier} while keeping ${preference} doable.`;
+  return `Use ${preference} to set your next safe movement goal.`;
+}
+
+function personalizedTodaySessionText(onboarding: OnboardingAnswers, plan: PatientPlan) {
+  const barrier = primaryBarrier(onboarding).toLowerCase();
+  if (barrier && barrier !== "today's energy") return `Review your week and plan around ${barrier}.`;
+  return `Review your week and set your next safe ${plan.activity.toLowerCase()} goal.`;
+}
+
+function personalizedSessionOpening(sessionId: number, firstName: string, onboarding: OnboardingAnswers, plan: PatientPlan) {
+  const barrier = primaryBarrier(onboarding).toLowerCase();
+  const preference = primaryPreference(onboarding, plan).toLowerCase();
+  if (sessionId === 4) return `Nice to see you, ${firstName}. You chose ${onboarding.trackingType || "manual tracking"}. What feels easiest to track after ${preference}?`;
+  if (sessionId === 5) return `Nice to see you, ${firstName}. How did your body feel after ${plan.minutes} minutes of ${preference}?`;
+  if (sessionId === 6) return `Nice to see you, ${firstName}. Want to talk about how gentle ${preference} supports recovery without pushing too hard?`;
+  if (sessionId === 7 && barrier !== "today's energy") return `Nice to see you, ${firstName}. Let's make a plan around ${barrier}. What part was hardest this week?`;
+  if (sessionId === 8) return onboarding.supportPerson ? `Nice to see you, ${firstName}. How could ${onboarding.supportPerson.name} support your ${preference} routine?` : `Nice to see you, ${firstName}. Would reminders, a support person, or going solo help your ${preference} routine?`;
+  if (sessionId === 10) return `Nice to see you, ${firstName}. You are working toward ${formatMetHoursPerWeek(plan.metHours)}. What progress felt real this week?`;
+  if (sessionId === 11) return `Nice to see you, ${firstName}. What do you want to ask your care team about ${preference}, symptoms, or safety?`;
+  if (sessionId === 12) return `Nice to see you, ${firstName}. What should stay the same as your ${preference} plan grows slowly?`;
+  if (barrier && barrier !== "today's energy") return `Nice to see you, ${firstName}. How did ${barrier} affect your ${preference} plan this week?`;
+  return `Nice to see you, ${firstName}. How did your ${preference} plan feel this week?`;
+}
+
+function personalizedSessionChips(sessionId: number, onboarding: OnboardingAnswers, plan: PatientPlan) {
+  const chips: string[] = [];
+  const add = (chip: string) => {
+    if (!chips.includes(chip)) chips.push(chip);
+  };
+  if (sessionId === 4) {
+    add(`Track ${plan.activity.toLowerCase()} minutes`);
+    add(`Use ${onboarding.trackingType || "manual tracking"}`);
+    add("What counts as MET-hours?");
+    add("I forgot to track one day");
+    return chips;
+  }
+  if (sessionId === 5) {
+    add("I felt okay after it");
+    add("I felt too tired after it");
+    add("I had symptoms");
+    add("Can we lower the goal?");
+    return chips;
+  }
+  if (sessionId === 6) {
+    add("Why does movement help?");
+    add("How much is enough?");
+    add("I am worried about overdoing it");
+    add("Can small sessions count?");
+    return chips;
+  }
+  if (sessionId === 8) {
+    add(onboarding.supportPerson ? `Ask ${onboarding.supportPerson.name} to remind me` : "Add a support person");
+    add("I prefer doing it alone");
+    add("Morning reminders help");
+    add("I need a backup routine");
+    return chips;
+  }
+  if (sessionId === 10) {
+    add("Show my progress simply");
+    add("What should improve next?");
+    add("I missed sessions");
+    add("Keep the same goal");
+    return chips;
+  }
+  if (sessionId === 11) {
+    add("What should I ask my doctor?");
+    add("Is this safe with neuropathy?");
+    add("Which symptoms mean stop?");
+    add("Share my summary");
+    return chips;
+  }
+  if (onboarding.barriers.includes("Fatigue")) add("Fatigue got in the way");
+  if (onboarding.barriers.includes("Need bathrooms nearby") || onboarding.environment["Bathrooms on route"]) add("Bathroom access");
+  if (onboarding.barriers.includes("Fear of overdoing it")) add("I was worried I would overdo it");
+  if (onboarding.barriers.includes("Numb feet / neuropathy")) add("My feet felt numb");
+  if (onboarding.barriers.includes("Nausea")) add("Nausea made it harder");
+  if (onboarding.barriers.includes("No time")) add("I did not have enough time");
+  if (onboarding.barriers.includes("Weather")) add("Weather got in the way");
+  if (onboarding.barriers.includes("No safe place to walk")) add("I did not feel safe walking");
+  if (onboarding.preferences.includes("Gardening") || plan.activity === "Gardening") add("I want gardening to count");
+  if (onboarding.preferences.includes("Walking") || plan.activity === "Walking") add("Walking felt doable");
+  if (onboarding.preferences.includes("Cycling") || plan.activity === "Cycling") add("Cycling felt doable");
+  if (onboarding.preferences.includes("Swimming") || plan.activity === "Swimming") add("Swimming felt doable");
+  add(`Can we keep ${plan.activity.toLowerCase()} smaller this week?`);
+  return chips.slice(0, 4);
+}
+
+function sessionArtieReply(sessionId: number, answer: string, firstName: string, onboarding: OnboardingAnswers, plan: PatientPlan) {
+  if (/symptom|chest|dizzy|fever|shortness/i.test(answer)) return "Symptoms come first. Pause movement and use the symptom flow or contact your care team if anything feels severe.";
+  if (sessionId === 4) return `Good. For your ${plan.activity.toLowerCase()} plan, tracking ${plan.minutes} minutes at a time is enough. ${onboarding.trackingType === "Manual" ? "Manual logs are okay for now." : `${onboarding.trackingType} can help capture activity without extra work.`}`;
+  if (sessionId === 5) return /tired|lower|hard/i.test(answer) ? `That is useful feedback. We can keep ${plan.activity.toLowerCase()} shorter or easier this week and still count consistency.` : `Good. If ${plan.minutes} minutes felt okay, keep the same dose and avoid jumping too fast.`;
+  if (sessionId === 6) return "Small, safe movement can support stamina, confidence, and daily routines. The goal is consistency, not intensity.";
+  if (sessionId === 8) return onboarding.supportPerson ? `${onboarding.supportPerson.name} can help with reminders, encouragement, or sharing concerns with the care team if you want.` : "Support is optional. We can use reminders, a routine anchor, or a solo plan if that feels better.";
+  if (sessionId === 10) return `Your progress is measured against ${plan.minutes} minutes, ${plan.daysPerWeek} days/week. Missed days help us adjust the plan, not blame you.`;
+  if (sessionId === 11) return "Good question for your doctor. I can help summarize restrictions, neuropathy/fall risk, and symptoms that should make you stop.";
+  if (/bathroom/i.test(answer)) return "That makes sense. Bathroom access is planning information, not an excuse. Want to build shorter loops with restroom stops?";
+  if (/overdo|worried|afraid/i.test(answer)) return "That worry is valid. We can keep your next goal below your limit and use a stop-before-tired rule.";
+  if (/neuropathy|numb|feet/i.test(answer)) return "Thanks for flagging that. We can favor flatter routes, shorter loops, and shoes or surfaces that feel steadier.";
+  if (/nausea/i.test(answer)) return "Nausea days need a softer plan. We can use very short movement windows and avoid pushing on rough treatment days.";
+  if (/weather/i.test(answer)) return "Weather is a real planning detail. I can suggest indoor backups or shaded, cooler route windows.";
+  if (/safe/i.test(answer)) return "Safety comes first. We can use indoor movement, supported routes, or care-team-approved alternatives.";
+  if (/garden/i.test(answer)) return "Gardening can count when it is paced safely. We can split it into short, gentle blocks.";
+  if (/walking/i.test(answer)) return "Good. We'll keep walking as the anchor and adjust the dose around your current energy.";
+  if (/fatigue|wiped|tired|infusion/i.test(answer)) return "That's not a failure - that's information. Infusion days are predictably hard. Want to plan your walks around your treatment schedule?";
+  return artieResponse(answer, firstName, onboarding, plan);
+}
 function buildArtieSuggestionChips(onboarding: OnboardingAnswers, plan: PatientPlan) {
   const chips: string[] = [];
   const add = (chip: string) => {
@@ -2990,36 +3218,6 @@ function formatTime(seconds: number) {
   const sec = (seconds % 60).toString().padStart(2, "0");
   return `${min}:${sec}`;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

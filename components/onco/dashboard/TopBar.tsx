@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -18,13 +18,11 @@ export function TopBar({ title }: { title: string }) {
         <div>
           <h1 className="onco-display text-3xl font-extrabold">{title}</h1>
           <p className="mt-1 text-sm text-onco-muted">
-            {user ? `${user.name} · ${user.title}` : "Demo role"}
+            {user ? `${user.name} - ${user.title}` : "Demo role"}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-onco-sage-soft px-3 py-1 text-xs font-semibold text-onco-sage">
-            Frontend demo
-          </span>
+
           <button
             className="min-h-11 rounded-full border border-onco-line bg-white px-4 py-2 text-sm font-semibold text-onco-ink shadow-onco"
             type="button"
@@ -62,3 +60,5 @@ export function TopBar({ title }: { title: string }) {
     </>
   );
 }
+
+

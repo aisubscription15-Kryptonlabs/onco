@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { Badge } from "@/components/onco/ui/Badge";
@@ -21,10 +21,11 @@ export function PatientRosterTable({ patients }: { patients: DemoPatient[] }) {
         { header: "Cancer", cell: (patient) => patient.cancerType },
         { header: "Phase", cell: (patient) => <Badge>{patient.phase}</Badge> },
         { header: "Adherence", cell: (patient) => `${patient.adherence}%` },
-        { header: "MET-hours", cell: (patient) => patient.prescription.metHours },
+        { header: "MET-hours/week", cell: (patient) => patient.prescription.metHours },
         { header: "Status", cell: (patient) => <Badge tone={tone(patient.prescriptionStatus)}>{patient.prescriptionStatus.replace("-", " ")}</Badge> },
       ]}
     />
   );
 }
+
 
